@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pokémon Collection – WotC Era (FR)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1226;--bg2:#171b36;--card:#1d2244;--card2:#242a55;--ink:#f3f4ff;--muted:#a7acd1;--line:#2f3670;
+  --yellow:#ffcb05;--blue:#3b6bff;--red:#ff4b5c;--green:#2fd57a;--orange:#ff9838;--purple:#a86bff;--pink:#ff6fb5;--cyan:#38d6ff;
+  --radius:16px;--shadow:0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(1200px 600px at 10% -10%,#2b2f6a 0%,var(--bg) 55%),var(--bg);color:var(--ink);font-family:Nunito,system-ui,sans-serif;min-height:100%}
+a{color:var(--cyan)}
+button{font-family:inherit;cursor:pointer;border:0;border-radius:12px;font-weight:800}
+input,select{font-family:inherit}
+.app{max-width:1280px;margin:0 auto;padding:18px 18px 80px}
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:12px}
+.ball{width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,var(--red) 0 48%,#111 48% 52%,#fff 52%);position:relative;box-shadow:var(--shadow)}
+.ball:after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;border:4px solid #111;left:50%;top:50%;transform:translate(-50%,-50%)}
+h1{margin:0;font-size:24px;font-weight:900;letter-spacing:.3px}
+h1 small{display:block;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.status{font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.status.ok{color:var(--green);border-color:rgba(47,213,122,.4)}
+.status.warn{color:var(--orange);border-color:rgba(255,152,56,.4)}
+.status.err{color:var(--red);border-color:rgba(255,75,92,.4)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0 16px}
+.stat{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat:before{content:"";position:absolute;inset:auto -30px -40px auto;width:110px;height:110px;border-radius:50%;opacity:.18;background:var(--c,var(--blue))}
+.stat b{display:block;font-size:26px;font-weight:900}
+.stat span{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tab{padding:10px 16px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.tab.on{background:var(--yellow);color:#1a1a1a}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.toolbar input[type=search]{flex:1;min-width:220px;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:15px;font-weight:700}
+.toolbar select{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:700}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{background:transparent;color:var(--muted);padding:10px 14px;border-radius:0}
+.seg button.on{background:var(--blue);color:#fff}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--muted);background:var(--card);border:1px solid var(--line);padding:9px 12px;border-radius:12px}
+.sets{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:18px}
+.set{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:transform .12s,border-color .12s;position:relative}
+.set:hover{transform:translateY(-2px);border-color:var(--yellow)}
+.set.on{border-color:var(--yellow);box-shadow:0 0 0 2px rgba(255,203,5,.35)}
+.set.nofr{opacity:.55}
+.set h3{margin:0 0 2px;font-size:15px;font-weight:900}
+.set small{color:var(--muted);font-weight:700;font-size:11px}
+.bar{height:8px;border-radius:99px;background:#0b0e20;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--cyan))}
+.set .pct{position:absolute;right:12px;top:12px;font-weight:900;font-size:13px;color:var(--green)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 12px 10px;position:relative;overflow:hidden;transition:transform .12s}
+.c:hover{transform:translateY(-2px)}
+.c.own{background:linear-gradient(160deg,#1f3a2f,var(--card));border-color:rgba(47,213,122,.45)}
+.c .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.c .num{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.5px}
+.c .name{font-size:16px;font-weight:900;line-height:1.15;margin:2px 0}
+.c .en{font-size:12px;color:var(--muted);font-weight:700}
+.badge{display:inline-block;font-size:10px;font-weight:900;padding:3px 8px;border-radius:999px;letter-spacing:.4px;text-transform:uppercase;background:#2a3060;color:var(--muted)}
+.badge.holo{background:linear-gradient(90deg,#ff6fb5,#ffcb05,#38d6ff);color:#111}
+.badge.rare{background:var(--purple);color:#fff}
+.badge.unc{background:#3b6bff;color:#fff}
+.badge.com{background:#3a4170;color:#dfe2ff}
+.badge.promo{background:var(--orange);color:#111}
+.badge.trainer{background:#2a3060;color:var(--cyan)}
+.badge.energy{background:#2a3060;color:var(--yellow)}
+.type{position:absolute;right:-18px;top:-18px;width:70px;height:70px;border-radius:50%;opacity:.25;background:var(--t,#555)}
+.price{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px}
+.price b{font-size:18px;font-weight:900;color:var(--yellow)}
+.price small{color:var(--muted);font-weight:700;font-size:11px}
+.price.na b{color:var(--muted);font-size:13px}
+.act{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.own-btn{flex:1;padding:9px 10px;background:#2a3060;color:var(--ink);font-size:13px}
+.own-btn.on{background:var(--green);color:#0b2a18}
+.qty{display:flex;align-items:center;gap:4px;background:#0b0e20;border-radius:10px;padding:2px}
+.qty button{width:28px;height:28px;background:#2a3060;color:#fff;border-radius:8px;font-size:16px;line-height:1}
+.qty span{min-width:22px;text-align:center;font-weight:900}
+.conds{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.cp{padding:5px 8px;border-radius:8px;font-size:11px;background:#0b0e20;color:var(--muted);border:1px solid var(--line)}
+.cp.on{color:#111;border-color:transparent}
+.fe{font-size:11px;padding:5px 8px;border-radius:8px;background:#0b0e20;color:var(--muted);border:1px solid var(--line)}
+.fe.on{background:var(--yellow);color:#111;border-color:transparent}
+.val{margin-top:8px;font-size:12px;color:var(--muted);font-weight:700}
+.val b{color:var(--green);font-size:14px}
+.empty{padding:40px;text-align:center;color:var(--muted);font-weight:700}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow)}
+.panel h2{margin:0 0 10px;font-size:20px;font-weight:900}
+.panel p{color:#d9dcff;line-height:1.5;margin:6px 0}
+.gradegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.grade{border-radius:var(--radius);padding:14px 16px;background:var(--card2);border-left:8px solid var(--g);position:relative}
+.grade h3{margin:0;font-size:18px;font-weight:900}
+.grade .mult{position:absolute;right:14px;top:12px;font-weight:900;font-size:20px;color:var(--g)}
+.grade dl{margin:10px 0 0;display:grid;grid-template-columns:70px 1fr;gap:4px 8px;font-size:13px}
+.grade dt{color:var(--muted);font-weight:800}
+.grade dd{margin:0;color:#e6e8ff}
+.grade .sum{margin-top:10px;font-size:13px;color:var(--muted);font-style:italic}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+.btn{padding:11px 16px;background:var(--blue);color:#fff;font-size:14px;text-decoration:none;display:inline-block;border-radius:12px;font-weight:800}
+code{background:#0b0e20;padding:2px 6px;border-radius:6px;font-size:12px}
+.btn.alt{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+.btn.gold{background:var(--yellow);color:#111}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.note{font-size:12px;color:var(--muted);font-weight:700}
+.slider{display:flex;align-items:center;gap:10px}
+.slider input{width:180px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#111633;border:1px solid var(--line);color:var(--ink);padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.steps{counter-reset:s;padding:0;margin:0;list-style:none}
+.steps li{position:relative;padding:8px 0 8px 44px;color:#e6e8ff;line-height:1.45}
+.steps li:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:6px;width:30px;height:30px;border-radius:50%;background:var(--yellow);color:#111;font-weight:900;display:grid;place-items:center}
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:900;background:#2a3060;color:var(--muted)}
+@media (max-width:600px){.app{padding:12px 10px 80px}h1{font-size:19px}.stat b{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="ball"></div>
+    <h1>Ma collection Pokémon <small>WotC era 1999–2003 · cartes françaises · prix en CAD</small></h1></div>
+  <div class="row"><span id="saveStatus" class="status">Loading…</span></div>
+</header>
+
+<div class="stats">
+  <div class="stat" style="--c:var(--green)"><b id="stOwned">–</b><span>Cards owned</span></div>
+  <div class="stat" style="--c:var(--yellow)"><b id="stValue">–</b><span>Collection value (CAD)</span></div>
+  <div class="stat" style="--c:var(--cyan)"><b id="stNM">–</b><span>Value if all Near Mint</span></div>
+  <div class="stat" style="--c:var(--purple)"><b id="stSets">–</b><span>Sets started</span></div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-view="collection">🗂 Collection</button>
+  <button class="tab" data-view="guide">🔍 Condition guide</button>
+  <button class="tab" data-view="value">💰 Value report</button>
+  <button class="tab" data-view="export">⬇ Export / Database</button>
+</div>
+
+<section id="view-collection">
+  <div class="sets" id="sets"></div>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Search a card (French or English name, number)…">
+    <div class="seg" id="ownFilter">
+      <button data-f="all" class="on">All</button><button data-f="own">Owned</button><button data-f="miss">Missing</button>
+    </div>
+    <select id="rarity"><option value="">All rarities</option></select>
+    <label class="toggle"><input type="checkbox" id="frOnly" checked> French-released sets only</label>
+  </div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<section id="view-guide" hidden>
+  <div class="panel">
+    <h2>How to grade a card in 60 seconds</h2>
+    <ol class="steps">
+      <li><b>Good light, no sleeve.</b> Take the card out, tilt it under a lamp or daylight. Look at the front, then the back — the back shows wear first on vintage cards.</li>
+      <li><b>Corners (4).</b> Sharp points = NM. Tiny white tick = EX. Visibly rounded = LP or worse.</li>
+      <li><b>Edges.</b> Look for whitening along the back border (the blue border shows it clearly on WotC cards) and small nicks.</li>
+      <li><b>Surface.</b> Tilt the holo under light: scratches, scuffs, print lines, loss of gloss. Check for dents or indents by looking across the card at a low angle.</li>
+      <li><b>Bends & creases.</b> Lay it flat. Any crease (a line that breaks the surface) caps the grade at <span class="pill">PL</span>. Any writing, tear or water damage = <span class="pill">PO</span>.</li>
+      <li><b>When in doubt, grade one step lower.</b> Buyers forgive an undergraded card; they return an overgraded one.</li>
+    </ol>
+    <p class="note">The 7 grades below follow the Cardmarket scale (the marketplace French collectors use). Multipliers are applied to the Near-Mint market price to estimate what each condition sells for; they are typical ratios, not guarantees.</p>
+  </div>
+  <div class="gradegrid" id="grades"></div>
+  <div class="panel" style="margin-top:14px">
+    <h2>Things that change the price a lot</h2>
+    <p><b>1st Edition stamp</b> (small "1" badge left of the illustration, French Set de Base, Jungle, Fossile, Team Rocket, Gym, Neo): typically 2–5× the unlimited price for holos. Tick "1st Ed." on the card.</p>
+    <p><b>Holo vs non-holo</b>: the same Pokémon can exist as a holo (rare, high value) and a non-holo in the same set — check the card number.</p>
+    <p><b>Language</b>: reference prices come from Cardmarket (all languages mixed, mostly English). French copies of common cards often sell a bit lower; French chase cards (Dracaufeu, Tortank, Florizarre…) sell close to English. Use the "French price adjustment" slider in Export to apply a global correction once you see real sale results.</p>
+    <p><b>Centering & print quality</b>: off-centre borders or print lines lower a grade for picky buyers but don't change the condition code.</p>
+  </div>
+</section>
+
+<section id="view-value" hidden>
+  <div class="panel"><h2>Value by set</h2><div style="overflow:auto"><table id="setTable"></table></div></div>
+  <div class="panel"><h2>Your most valuable cards</h2><div style="overflow:auto"><table id="topTable"></table></div></div>
+</section>
+
+<section id="view-export" hidden>
+  <div class="panel">
+    <h2>Download your database</h2>
+    <p>Everything you tick is saved immediately in <code>data/pokemon_collection.db</code>. Download a snapshot of the <b>SQLite database</b> (cards, prices, conditions, your collection, ready-made views) or CSV files for a spreadsheet.</p>
+    <div class="row" style="margin-top:10px">
+      <a class="btn gold" href="/api/export/sqlite" download>⬇ SQLite database (.db)</a>
+      <a class="btn" href="/api/export/collection.csv" download>⬇ My collection (.csv)</a>
+      <a class="btn alt" href="/api/export/prices.csv" download>⬇ Full price list (.csv)</a>
+      <button class="btn alt" id="copySummary">📋 Copy summary</button>
+    </div>
+    <p class="note" style="margin-top:10px">API docs for Claude Code: <a href="/docs">/docs</a></p>
+  </div>
+  <div class="panel">
+    <h2>Pricing settings</h2>
+    <div class="slider"><span class="note">French price adjustment</span><input type="range" id="frFactor" min="50" max="120" step="5"><b id="frFactorLbl"></b></div>
+    <p class="note" style="margin-top:8px">Reference: Cardmarket 30-day average sell price (EUR) per card, converted at <b id="rateLbl"></b>. Prices pulled <b id="dateLbl"></b> — run <code>make refresh-prices</code> to update. Market prices refer to Near-Mint cards; the condition multipliers scale them down.</p>
+  </div>
+  <div class="panel">
+    <h2>Import a collection file</h2>
+    <p class="note">Load the <code>pokemon_collection_state.json</code> exported from the Claude web app (merges into the current collection).</p>
+    <input type="file" id="importFile" accept=".json">
+  </div>
+</section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(async function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const fmt=n=>n==null?'—':new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD',maximumFractionDigits:n>=100?0:2}).format(n);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toast=(m)=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200)};
+const TYPE={Fire:'#ff6a3d',Water:'#3b8dff',Grass:'#4fcf5e',Lightning:'#ffd23f',Psychic:'#b36bff',Fighting:'#c7733a',Colorless:'#c9cbe0',Darkness:'#4a4f6b',Metal:'#9aa7b8'};
+const GCOL={MT:'#38d6ff',NM:'#2fd57a',EX:'#a3e635',GD:'#ffcb05',LP:'#ff9838',PL:'#ff6fb5',PO:'#ff4b5c'};
+const api=async(path,opt)=>{const r=await fetch(path,Object.assign({headers:{'Content-Type':'application/json'}},opt||{}));if(!r.ok)throw new Error((await r.text())||r.status);return r.json();};
+const setStatus=(t,cls)=>{const s=$('#saveStatus');s.textContent=t;s.className='status '+(cls||'')};
+
+// ---------- load everything once ----------
+let sets, conds, condBy, settings, cards, byId;
+async function loadAll(){
+  const [s,c,st,cs]=await Promise.all([api('/api/sets'),api('/api/conditions'),api('/api/settings'),api('/api/cards?limit=2000')]);
+  sets=s; conds=c; condBy=Object.fromEntries(c.map(k=>[k.code,k])); settings=Object.fromEntries(st.map(x=>[x.key,x.value]));
+  cards=cs.items; byId=Object.fromEntries(cards.map(x=>[x.id,x]));
+}
+await loadAll(); setStatus('Connected · '+cards.length+' cards','ok');
+let frFactor=parseFloat(settings.fr_factor||'1');
+const mult=code=>condBy[code]?condBy[code].multiplier:1;
+const owned=c=>!!(c.owned&&c.quantity>0);
+const unit=c=>c.price_nm_cad==null?null:c.price_nm_cad*mult(c.condition||'NM')*((c.language||'FR')==='FR'?frFactor:1);
+const nmAdj=c=>c.price_nm_cad==null?null:c.price_nm_cad*frFactor;
+const rarityClass=r=>{r=r||'';if(/Holo/.test(r))return'holo';if(/Promo/.test(r))return'promo';if(/Rare/.test(r))return'rare';if(/Uncommon/.test(r))return'unc';if(/Common/.test(r))return'com';return''};
+const rarityShort=r=>({'Rare Holo':'Holo rare','Rare':'Rare','Uncommon':'Uncommon','Common':'Common','Promo':'Promo'}[r]||r||'—');
+const setOf=c=>sets.find(s=>s.id===c.set_id);
+
+// ---------- save (per card, debounced) ----------
+const timers={};
+function save(c){ clearTimeout(timers[c.id]); setStatus('Saving…','warn');
+  timers[c.id]=setTimeout(async()=>{ try{
+    if(owned(c)) await api('/api/collection/'+c.id,{method:'PUT',body:JSON.stringify({quantity:c.quantity,condition:c.condition||'NM',first_edition:!!c.first_edition,language:c.language||'FR',notes:c.notes||null})});
+    else await api('/api/collection/'+c.id,{method:'DELETE'});
+    setStatus('Saved ✓','ok'); refreshSets(); }catch(e){ setStatus('Save failed — is the server running?','err'); console.error(e);} },400); }
+async function refreshSets(){ try{ sets=await api('/api/sets'); renderSets(); }catch(e){} }
+
+// ---------- UI state ----------
+let ui={set:'base1',q:'',own:'all',rarity:'',frOnly:true,view:'collection'};
+try{Object.assign(ui,JSON.parse(localStorage.getItem('pkm-ui')||'{}'));}catch(e){}
+const saveUi=()=>{try{localStorage.setItem('pkm-ui',JSON.stringify(ui));}catch(e){}};
+$('#frOnly').checked=ui.frOnly; $('#q').value=ui.q;
+[...new Set(cards.map(c=>c.rarity).filter(Boolean))].sort().forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;$('#rarity').append(o)});
+$('#rarity').value=ui.rarity;
+
+// ---------- stats ----------
+function stats(){ let n=0,v=0,nm=0; const started=new Set();
+  for(const c of cards){ if(!owned(c)) continue; n+=c.quantity; started.add(c.set_id); const u=unit(c); if(u!=null){v+=u*c.quantity; nm+=nmAdj(c)*c.quantity;} }
+  $('#stOwned').textContent=n.toLocaleString('en-CA'); $('#stValue').textContent=fmt(v); $('#stNM').textContent=fmt(nm); $('#stSets').textContent=started.size+' / '+sets.length; }
+
+// ---------- sets ----------
+function renderSets(){ const el=$('#sets'); el.innerHTML='';
+  for(const s of sets){ if(ui.frOnly&&!s.released_in_french) continue; const total=s.cards_in_set, o=cards.filter(c=>c.set_id===s.id&&owned(c)).length; const pct=Math.round(100*o/total);
+    const d=document.createElement('div'); d.className='set'+(ui.set===s.id?' on':'')+(s.released_in_french?'':' nofr');
+    d.innerHTML=`<h3>${esc(s.name_fr)}</h3><small>${esc(s.name_en)} · ${s.release_date.slice(0,4)} · ${total} cards</small><span class="pct">${pct}%</span><div class="bar"><i style="width:${pct}%"></i></div><small>${o} / ${total} owned</small>`;
+    d.onclick=()=>{ui.set=s.id;saveUi();renderSets();renderGrid();}; el.append(d);} }
+
+// ---------- grid ----------
+function renderGrid(){ const g=$('#grid'); const q=ui.q.trim().toLowerCase();
+  let list=cards.filter(c=>c.set_id===ui.set);
+  if(q) list=cards.filter(c=>(!ui.frOnly||setOf(c).released_in_french)&&(c.name_fr.toLowerCase().includes(q)||c.name_en.toLowerCase().includes(q)||c.number.toLowerCase()===q));
+  if(ui.own==='own') list=list.filter(owned); if(ui.own==='miss') list=list.filter(c=>!owned(c));
+  if(ui.rarity) list=list.filter(c=>c.rarity===ui.rarity);
+  if(!list.length){g.innerHTML='<div class="empty">No cards match.</div>';return;}
+  g.innerHTML=list.slice(0,400).map(cardHtml).join('')+(list.length>400?`<div class="empty">Showing 400 of ${list.length} — refine your search.</div>`:''); }
+function cardHtml(c){ const on=owned(c); const t=(c.types||'').split(',')[0]; const u=unit(c); const s=setOf(c);
+  const badge=c.supertype==='Pokémon'?`<span class="badge ${rarityClass(c.rarity)}">${esc(rarityShort(c.rarity))}${c.is_holo&&!/Holo/.test(c.rarity||'')?' ✦':''}</span>`:
+    c.supertype==='Energy'?`<span class="badge energy">Energy</span>`:`<span class="badge trainer">Trainer${c.rarity?' · '+esc(rarityShort(c.rarity)):''}</span>`;
+  return `<div class="c ${on?'own':''}" data-id="${c.id}">
+    <div class="type" style="--t:${TYPE[t]||'#555'}"></div>
+    <div class="top"><div><div class="num">#${esc(c.number)} / ${s.printed_total} · ${esc(s.name_fr)}</div>
+      <div class="name">${esc(c.name_fr)}</div><div class="en">${[c.name_en!==c.name_fr?esc(c.name_en):'',c.hp?c.hp+' PV':''].filter(Boolean).join(' · ')}</div></div>${badge}</div>
+    <div class="price ${c.price_nm_cad==null?'na':''}"><b>${c.price_nm_cad==null?'no market price':fmt(nmAdj(c))}</b><small>Near Mint · CAD</small></div>
+    <div class="act"><button class="own-btn ${on?'on':''}" data-act="own">${on?'✓ I have it':'+ I have this card'}</button>
+      ${on?`<div class="qty"><button data-act="dec">−</button><span>${c.quantity}</span><button data-act="inc">+</button></div>`:''}</div>
+    ${on?`<div class="conds">${conds.map(k=>`<button class="cp ${c.condition===k.code?'on':''}" data-act="cond" data-c="${k.code}" style="${c.condition===k.code?'background:'+GCOL[k.code]:''}" title="${esc(k.name_fr)} · ×${k.multiplier}">${k.code}</button>`).join('')}
+      <button class="fe ${c.first_edition?'on':''}" data-act="fe" title="1st Edition stamp">1st Ed.</button></div>
+      <div class="val">${c.condition?esc(condBy[c.condition].name_fr):'Pick a condition'} ${u!=null?`→ <b>${fmt(u)}</b>${c.quantity>1?' each · '+fmt(u*c.quantity)+' total':''}`:''}${c.first_edition?' · <span class="pill" style="background:var(--yellow);color:#111">1st Ed. — not priced automatically</span>':''}</div>`:''}
+  </div>`; }
+$('#grid').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const el=e.target.closest('.c'); const c=byId[el.dataset.id]; const act=b.dataset.act;
+  if(act==='own'){ if(owned(c)){ c.owned=0;c.quantity=0;c.condition=null;c.first_edition=0; } else { c.owned=1;c.quantity=1;c.condition='NM';c.first_edition=0;c.language='FR'; } }
+  else if(act==='inc'){ c.quantity++; } else if(act==='dec'){ c.quantity--; if(c.quantity<=0){c.owned=0;c.quantity=0;c.condition=null;} }
+  else if(act==='cond'){ c.condition=b.dataset.c; } else if(act==='fe'){ c.first_edition=c.first_edition?0:1; }
+  save(c); const tmp=document.createElement('div'); tmp.innerHTML=cardHtml(c); el.replaceWith(tmp.firstElementChild); stats(); });
+
+// ---------- controls ----------
+$('#q').addEventListener('input',e=>{ui.q=e.target.value;saveUi();renderGrid();});
+$('#ownFilter').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#ownFilter button').forEach(x=>x.classList.toggle('on',x===b));ui.own=b.dataset.f;saveUi();renderGrid();});
+$$('#ownFilter button').forEach(x=>x.classList.toggle('on',x.dataset.f===ui.own));
+$('#rarity').addEventListener('change',e=>{ui.rarity=e.target.value;saveUi();renderGrid();});
+$('#frOnly').addEventListener('change',e=>{ui.frOnly=e.target.checked;saveUi(); if(ui.frOnly&&!sets.find(s=>s.id===ui.set).released_in_french) ui.set='base1'; renderSets();renderGrid();});
+$$('.tab').forEach(t=>t.onclick=()=>{ui.view=t.dataset.view;saveUi();showView();});
+function showView(){ $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.view===ui.view)); ['collection','guide','value','export'].forEach(v=>$('#view-'+v).hidden=v!==ui.view); if(ui.view==='value') renderValue(); }
+
+// ---------- guide ----------
+$('#grades').innerHTML=conds.map(k=>`<div class="grade" style="--g:${GCOL[k.code]}"><h3>${k.code} · ${esc(k.name_fr)}</h3><div class="note">${esc(k.name_en)}</div><div class="mult">×${k.multiplier}</div>
+  <dl><dt>Corners</dt><dd>${esc(k.corners)}</dd><dt>Edges</dt><dd>${esc(k.edges)}</dd><dt>Surface</dt><dd>${esc(k.surface)}</dd></dl><div class="sum">${esc(k.summary)}</div></div>`).join('');
+
+// ---------- value report ----------
+function renderValue(){ const rowsS=[]; let T={n:0,v:0,nm:0};
+  for(const s of sets){ const cs=cards.filter(c=>c.set_id===s.id); let n=0,v=0,nm=0; for(const c of cs){ if(!owned(c)) continue; n+=c.quantity; const u=unit(c); if(u!=null){v+=u*c.quantity; nm+=nmAdj(c)*c.quantity;} }
+    if(n) rowsS.push(`<tr><td><b>${esc(s.name_fr)}</b><br><span class="note">${esc(s.name_en)}</span></td><td class="r">${n}</td><td class="r">${Math.round(100*cs.filter(owned).length/cs.length)}%</td><td class="r">${fmt(v)}</td><td class="r">${fmt(nm)}</td></tr>`); T.n+=n;T.v+=v;T.nm+=nm; }
+  $('#setTable').innerHTML=`<tr><th>Set</th><th class="r">Cards</th><th class="r">Complete</th><th class="r">Value (your conditions)</th><th class="r">If all NM</th></tr>${rowsS.join('')||'<tr><td colspan=5 class="empty">Tick some cards first.</td></tr>'}
+    ${rowsS.length?`<tr><td><b>Total</b></td><td class="r"><b>${T.n}</b></td><td></td><td class="r"><b>${fmt(T.v)}</b></td><td class="r"><b>${fmt(T.nm)}</b></td></tr>`:''}`;
+  const top=cards.filter(owned).map(c=>({c,u:unit(c)})).filter(x=>x.u!=null).sort((a,b)=>b.u*b.c.quantity-a.u*a.c.quantity).slice(0,25);
+  $('#topTable').innerHTML=`<tr><th>Card</th><th>Set</th><th>Cond.</th><th class="r">Qty</th><th class="r">Each</th><th class="r">Total</th></tr>`+(top.map(x=>`<tr><td><b>${esc(x.c.name_fr)}</b> <span class="note">#${esc(x.c.number)}${x.c.first_edition?' · 1st Ed.':''}</span></td><td>${esc(setOf(x.c).name_fr)}</td><td><span class="pill" style="background:${GCOL[x.c.condition]};color:#111">${x.c.condition}</span></td><td class="r">${x.c.quantity}</td><td class="r">${fmt(x.u)}</td><td class="r"><b>${fmt(x.u*x.c.quantity)}</b></td></tr>`).join('')||'<tr><td colspan=6 class="empty">Nothing yet.</td></tr>'); }
+
+// ---------- export / settings ----------
+$('#frFactor').value=Math.round(frFactor*100); const lbl=()=>{$('#frFactorLbl').textContent=Math.round(frFactor*100)+'%'}; lbl();
+let frTimer; $('#frFactor').addEventListener('input',e=>{frFactor=e.target.value/100;lbl();stats();renderGrid();clearTimeout(frTimer);frTimer=setTimeout(()=>api('/api/settings/fr_factor',{method:'PUT',body:JSON.stringify({value:frFactor})}).then(()=>toast('Adjustment saved')).catch(()=>toast('Could not save setting')),600);});
+$('#rateLbl').textContent=`1 € = ${settings.eur_cad} CAD`; $('#dateLbl').textContent=settings.price_date;
+$('#copySummary').onclick=async()=>{const r=cards.filter(owned).map(c=>({c,u:unit(c)})).sort((a,b)=>(b.u||0)*b.c.quantity-(a.u||0)*a.c.quantity);const tot=r.reduce((a,x)=>a+(x.u||0)*x.c.quantity,0);
+  const txt=`Pokémon collection (WotC era, FR) — ${r.reduce((a,x)=>a+x.c.quantity,0)} cards, est. ${fmt(tot)}\n`+r.slice(0,40).map(x=>`• ${x.c.name_fr} #${x.c.number} (${setOf(x.c).name_fr}) ×${x.c.quantity} ${x.c.condition}${x.c.first_edition?' 1st Ed.':''} — ${fmt((x.u||0)*x.c.quantity)}`).join('\n');
+  try{await navigator.clipboard.writeText(txt);toast('Summary copied');}catch(e){toast('Copy not allowed here');}};
+$('#importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(!(j&&j.items)){toast('Not a collection file');return;}
+  const r=await api('/api/collection/bulk',{method:'POST',body:JSON.stringify({items:j.items})}); await loadAll(); stats(); renderSets(); renderGrid(); toast('Imported '+r.imported+' cards');}catch(err){toast('Import failed');console.error(err);}});
+
+// ---------- go ----------
+stats(); renderSets(); renderGrid(); showView();
+})().catch(e=>{document.querySelector('#saveStatus').textContent='Cannot reach the API — start the server (make run)';document.querySelector('#saveStatus').className='status err';console.error(e);});
+</script>
+</body>
+</html>
