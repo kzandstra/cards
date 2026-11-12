@@ -118,6 +118,18 @@ code{background:#0b0e20;padding:2px 6px;border-radius:6px;font-size:12px}
 .steps li{position:relative;padding:8px 0 8px 44px;color:#e6e8ff;line-height:1.45}
 .steps li:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:6px;width:30px;height:30px;border-radius:50%;background:var(--yellow);color:#111;font-weight:900;display:grid;place-items:center}
 .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:900;background:#2a3060;color:var(--muted)}
+.sell-btn{padding:9px 10px;background:var(--yellow);color:#111;font-size:13px}
+.listed{font-size:11px;font-weight:900;color:var(--yellow);margin-top:6px}
+dialog{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;width:min(460px,94vw);box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(5,7,20,.7)}
+dialog h2{margin:0 0 4px;font-size:19px;font-weight:900}
+.form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:14px 0}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.form label.wide{grid-column:1/-1}
+.form input,.form select{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:#0b0e20;color:var(--ink);font-size:14px;font-weight:700;min-width:0}
+.mini{padding:6px 10px;font-size:12px;background:#2a3060;color:var(--ink);border-radius:8px}
+.mini.go{background:var(--green);color:#0b2a18}
+.pos{color:var(--green)}.neg{color:var(--red)}
 @media (max-width:600px){.app{padding:12px 10px 80px}h1{font-size:19px}.stat b{font-size:20px}}
 </style>
 </head>
@@ -140,6 +152,7 @@ code{background:#0b0e20;padding:2px 6px;border-radius:6px;font-size:12px}
   <button class="tab on" data-view="collection">🗂 Collection</button>
   <button class="tab" data-view="guide">🔍 Condition guide</button>
   <button class="tab" data-view="value">💰 Value report</button>
+  <button class="tab" data-view="sales">🏷 Sales</button>
   <button class="tab" data-view="export">⬇ Export / Database</button>
 </div>
 
@@ -184,6 +197,52 @@ code{background:#0b0e20;padding:2px 6px;border-radius:6px;font-size:12px}
   <div class="panel"><h2>Your most valuable cards</h2><div style="overflow:auto"><table id="topTable"></table></div></div>
 </section>
 
+<section id="view-sales" hidden>
+  <div class="stats">
+    <div class="stat" style="--c:var(--yellow)"><b id="slActive">–</b><span>Active listings</span></div>
+    <div class="stat" style="--c:var(--orange)"><b id="slAsking">–</b><span>Total asking (CAD)</span></div>
+    <div class="stat" style="--c:var(--green)"><b id="slNet">–</b><span>Net sales (CAD)</span></div>
+    <div class="stat" style="--c:var(--cyan)"><b id="slSold">–</b><span>Cards sold</span></div>
+  </div>
+  <div class="panel"><h2>Listings</h2>
+    <p class="note">To list a card, open the Collection tab and press <b>🏷 Sell</b> on a card you own. Selling a listing removes the copies from your collection.</p>
+    <div style="overflow:auto"><table id="listTable"></table></div></div>
+  <div class="panel"><h2>Sales history</h2>
+    <div style="overflow:auto"><table id="saleTable"></table></div>
+    <div class="row" style="margin-top:12px"><a class="btn alt" href="/api/export/sales.csv" download>⬇ Sales (.csv)</a></div></div>
+  <div class="panel"><h2>Report by month</h2><div style="overflow:auto"><table id="monthTable"></table></div></div>
+  <div class="panel"><h2>Report by platform</h2><div style="overflow:auto"><table id="platTable"></table></div></div>
+</section>
+
+<dialog id="dlgList"><form method="dialog">
+  <h2>List for sale</h2><div class="note" id="dlgListCard"></div>
+  <div class="form">
+    <label>Quantity<input type="number" name="quantity" min="1" step="1" required></label>
+    <label>Condition<select name="condition"></select></label>
+    <label>Asking price each (CAD)<input type="number" name="asking" min="0" step="0.01" required></label>
+    <label>Platform<input name="platform" list="platforms" placeholder="Cardmarket, eBay…"></label>
+    <label class="wide">Listing URL<input name="url" type="url" placeholder="https://…"></label>
+    <label class="wide">Notes<input name="notes"></label>
+  </div>
+  <div class="note" id="dlgListHint"></div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn alt" value="cancel" formnovalidate>Cancel</button><button class="btn gold" value="ok">Create listing</button></div>
+</form></dialog>
+<dialog id="dlgSell"><form method="dialog">
+  <h2>Record sale</h2><div class="note" id="dlgSellCard"></div>
+  <div class="form">
+    <label>Quantity sold<input type="number" name="quantity" min="1" step="1" required></label>
+    <label>Total sale price (CAD)<input type="number" name="price" min="0" step="0.01" required></label>
+    <label>Platform fees (CAD)<input type="number" name="fees" min="0" step="0.01" value="0"></label>
+    <label>Shipping you paid (CAD)<input type="number" name="shipping" min="0" step="0.01" value="0"></label>
+    <label>Date sold<input type="date" name="sold_at" required></label>
+    <label>Platform<input name="platform" list="platforms"></label>
+    <label class="wide">Buyer<input name="buyer"></label>
+    <label class="wide">Notes<input name="notes"></label>
+  </div>
+  <div class="row" style="justify-content:flex-end"><button class="btn alt" value="cancel" formnovalidate>Cancel</button><button class="btn gold" value="ok">Record sale</button></div>
+</form></dialog>
+<datalist id="platforms"><option>Cardmarket<option>eBay<option>Facebook Marketplace<option>Kijiji<option>In person</datalist>
+
 <section id="view-export" hidden>
   <div class="panel">
     <h2>Download your database</h2>
@@ -218,13 +277,14 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const toast=(m)=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200)};
 const TYPE={Fire:'#ff6a3d',Water:'#3b8dff',Grass:'#4fcf5e',Lightning:'#ffd23f',Psychic:'#b36bff',Fighting:'#c7733a',Colorless:'#c9cbe0',Darkness:'#4a4f6b',Metal:'#9aa7b8'};
 const GCOL={MT:'#38d6ff',NM:'#2fd57a',EX:'#a3e635',GD:'#ffcb05',LP:'#ff9838',PL:'#ff6fb5',PO:'#ff4b5c'};
-const api=async(path,opt)=>{const r=await fetch(path,Object.assign({headers:{'Content-Type':'application/json'}},opt||{}));if(!r.ok)throw new Error((await r.text())||r.status);return r.json();};
+const api=async(path,opt)=>{const r=await fetch(path,Object.assign({headers:{'Content-Type':'application/json'}},opt||{}));if(!r.ok){let m=await r.text();try{const d=JSON.parse(m).detail;if(typeof d==='string')m=d;}catch(e){}throw new Error(m||r.status);}return r.json();};
 const setStatus=(t,cls)=>{const s=$('#saveStatus');s.textContent=t;s.className='status '+(cls||'')};
 
 // ---------- load everything once ----------
-let sets, conds, condBy, settings, cards, byId;
+let sets, conds, condBy, settings, cards, byId, listings=[];
 async function loadAll(){
-  const [s,c,st,cs]=await Promise.all([api('/api/sets'),api('/api/conditions'),api('/api/settings'),api('/api/cards?limit=2000')]);
+  const [s,c,st,cs,ls]=await Promise.all([api('/api/sets'),api('/api/conditions'),api('/api/settings'),api('/api/cards?limit=2000'),api('/api/listings')]);
+  listings=ls;
   sets=s; conds=c; condBy=Object.fromEntries(c.map(k=>[k.code,k])); settings=Object.fromEntries(st.map(x=>[x.key,x.value]));
   cards=cs.items; byId=Object.fromEntries(cards.map(x=>[x.id,x]));
 }
@@ -280,16 +340,18 @@ function cardHtml(c){ const on=owned(c); const t=(c.types||'').split(',')[0]; co
     c.supertype==='Energy'?`<span class="badge energy">Energy</span>`:`<span class="badge trainer">Trainer${c.rarity?' · '+esc(rarityShort(c.rarity)):''}</span>`;
   return `<div class="c ${on?'own':''}" data-id="${c.id}">
     <div class="type" style="--t:${TYPE[t]||'#555'}"></div>
-    <div class="top"><div><div class="num">#${esc(c.number)} / ${s.printed_total} · ${esc(s.name_fr)}</div>
+    <div class="top"><div><div class="num">#${esc(c.number)} / ${c.printed_total} · ${esc(s.name_fr)}</div>
       <div class="name">${esc(c.name_fr)}</div><div class="en">${[c.name_en!==c.name_fr?esc(c.name_en):'',c.hp?c.hp+' PV':''].filter(Boolean).join(' · ')}</div></div>${badge}</div>
     <div class="price ${c.price_nm_cad==null?'na':''}"><b>${c.price_nm_cad==null?'no market price':fmt(nmAdj(c))}</b><small>Near Mint · CAD</small></div>
     <div class="act"><button class="own-btn ${on?'on':''}" data-act="own">${on?'✓ I have it':'+ I have this card'}</button>
-      ${on?`<div class="qty"><button data-act="dec">−</button><span>${c.quantity}</span><button data-act="inc">+</button></div>`:''}</div>
+      ${on?`<div class="qty"><button data-act="dec">−</button><span>${c.quantity}</span><button data-act="inc">+</button></div><button class="sell-btn" data-act="sell" title="List this card for sale">🏷 Sell</button>`:''}</div>
     ${on?`<div class="conds">${conds.map(k=>`<button class="cp ${c.condition===k.code?'on':''}" data-act="cond" data-c="${k.code}" style="${c.condition===k.code?'background:'+GCOL[k.code]:''}" title="${esc(k.name_fr)} · ×${k.multiplier}">${k.code}</button>`).join('')}
       <button class="fe ${c.first_edition?'on':''}" data-act="fe" title="1st Edition stamp">1st Ed.</button></div>
+      ${listedQty(c.id)?`<div class="listed">🏷 ${listedQty(c.id)} listed for sale</div>`:''}
       <div class="val">${c.condition?esc(condBy[c.condition].name_fr):'Pick a condition'} ${u!=null?`→ <b>${fmt(u)}</b>${c.quantity>1?' each · '+fmt(u*c.quantity)+' total':''}`:''}${c.first_edition?' · <span class="pill" style="background:var(--yellow);color:#111">1st Ed. — not priced automatically</span>':''}</div>`:''}
   </div>`; }
 $('#grid').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const el=e.target.closest('.c'); const c=byId[el.dataset.id]; const act=b.dataset.act;
+  if(act==='sell'){ openListing(c); return; }
   if(act==='own'){ if(owned(c)){ c.owned=0;c.quantity=0;c.condition=null;c.first_edition=0; } else { c.owned=1;c.quantity=1;c.condition='NM';c.first_edition=0;c.language='FR'; } }
   else if(act==='inc'){ c.quantity++; } else if(act==='dec'){ c.quantity--; if(c.quantity<=0){c.owned=0;c.quantity=0;c.condition=null;} }
   else if(act==='cond'){ c.condition=b.dataset.c; } else if(act==='fe'){ c.first_edition=c.first_edition?0:1; }
@@ -302,7 +364,7 @@ $$('#ownFilter button').forEach(x=>x.classList.toggle('on',x.dataset.f===ui.own)
 $('#rarity').addEventListener('change',e=>{ui.rarity=e.target.value;saveUi();renderGrid();});
 $('#frOnly').addEventListener('change',e=>{ui.frOnly=e.target.checked;saveUi(); if(ui.frOnly&&!sets.find(s=>s.id===ui.set).released_in_french) ui.set='base1'; renderSets();renderGrid();});
 $$('.tab').forEach(t=>t.onclick=()=>{ui.view=t.dataset.view;saveUi();showView();});
-function showView(){ $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.view===ui.view)); ['collection','guide','value','export'].forEach(v=>$('#view-'+v).hidden=v!==ui.view); if(ui.view==='value') renderValue(); }
+function showView(){ $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.view===ui.view)); ['collection','guide','value','sales','export'].forEach(v=>$('#view-'+v).hidden=v!==ui.view); if(ui.view==='value') renderValue(); if(ui.view==='sales') renderSales(); }
 
 // ---------- guide ----------
 $('#grades').innerHTML=conds.map(k=>`<div class="grade" style="--g:${GCOL[k.code]}"><h3>${k.code} · ${esc(k.name_fr)}</h3><div class="note">${esc(k.name_en)}</div><div class="mult">×${k.multiplier}</div>
@@ -316,6 +378,67 @@ function renderValue(){ const rowsS=[]; let T={n:0,v:0,nm:0};
     ${rowsS.length?`<tr><td><b>Total</b></td><td class="r"><b>${T.n}</b></td><td></td><td class="r"><b>${fmt(T.v)}</b></td><td class="r"><b>${fmt(T.nm)}</b></td></tr>`:''}`;
   const top=cards.filter(owned).map(c=>({c,u:unit(c)})).filter(x=>x.u!=null).sort((a,b)=>b.u*b.c.quantity-a.u*a.c.quantity).slice(0,25);
   $('#topTable').innerHTML=`<tr><th>Card</th><th>Set</th><th>Cond.</th><th class="r">Qty</th><th class="r">Each</th><th class="r">Total</th></tr>`+(top.map(x=>`<tr><td><b>${esc(x.c.name_fr)}</b> <span class="note">#${esc(x.c.number)}${x.c.first_edition?' · 1st Ed.':''}</span></td><td>${esc(setOf(x.c).name_fr)}</td><td><span class="pill" style="background:${GCOL[x.c.condition]};color:#111">${x.c.condition}</span></td><td class="r">${x.c.quantity}</td><td class="r">${fmt(x.u)}</td><td class="r"><b>${fmt(x.u*x.c.quantity)}</b></td></tr>`).join('')||'<tr><td colspan=6 class="empty">Nothing yet.</td></tr>'); }
+
+// ---------- sales ----------
+function listedQty(id){ return listings.filter(l=>l.card_id===id&&l.status==='active').reduce((a,l)=>a+l.quantity,0); }
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const num=v=>v===''||v==null?null:parseFloat(v);
+// Opens a <dialog>, resolves with the form values on OK or null on cancel.
+function ask(dlg){ return new Promise(res=>{ dlg.returnValue=''; dlg.showModal(); dlg.addEventListener('close',()=>res(dlg.returnValue==='ok'?Object.fromEntries(new FormData(dlg.querySelector('form'))):null),{once:true}); }); }
+async function reloadAll(){ await loadAll(); stats(); renderSets(); renderGrid(); if(ui.view==='sales') await renderSales(); }
+async function openListing(c){
+  clearTimeout(timers[c.id]);  // flush any pending edit so the server sees the current quantity/condition
+  try{ await api('/api/collection/'+c.id,{method:'PUT',body:JSON.stringify({quantity:c.quantity,condition:c.condition||'NM',first_edition:!!c.first_edition,language:c.language||'FR',notes:c.notes||null})}); setStatus('Saved ✓','ok'); }catch(e){ toast('Could not save the card'); return; }
+  const free=c.quantity-listedQty(c.id); if(free<=0){ toast('All copies are already listed'); return; }
+  const d=$('#dlgList'), f=d.querySelector('form');
+  const detail=await api('/api/cards/'+c.id); const table=detail.prices_by_condition;
+  $('#dlgListCard').textContent=`${c.name_fr} #${c.number} · ${setOf(c).name_fr}${c.first_edition?' · 1st Ed.':''}`;
+  f.condition.innerHTML=conds.map(k=>`<option value="${k.code}">${k.code} · ${esc(k.name_fr)}</option>`).join(''); f.condition.value=c.condition||'NM';
+  f.quantity.max=free; f.quantity.value=1; f.platform.value=''; f.url.value=''; f.notes.value='';
+  const suggest=()=>{ const p=table[f.condition.value]; f.asking.value=p==null?'':p.toFixed(2); $('#dlgListHint').textContent=(p==null?'No market price for this card — set your own.':'Estimate for this condition: '+fmt(p)+' each.')+(c.first_edition?' 1st Edition is not priced automatically: raise the price yourself.':'')+` ${free} unlisted cop${free>1?'ies':'y'} available.`; };
+  f.condition.onchange=suggest; suggest();
+  const v=await ask(d); if(!v) return;
+  try{ await api('/api/listings',{method:'POST',body:JSON.stringify({card_id:c.id,quantity:parseInt(v.quantity),condition:v.condition,asking_price_cad:num(v.asking),platform:v.platform||null,url:v.url||null,notes:v.notes||null})});
+    toast('Listing created'); await reloadAll(); }catch(e){ toast(e.message); }
+}
+async function openSell(l){
+  const d=$('#dlgSell'), f=d.querySelector('form');
+  $('#dlgSellCard').textContent=`${l.name_fr} #${l.number} · ${l.set_fr} · ${l.condition}${l.first_edition?' · 1st Ed.':''} — asking ${fmt(l.asking_price_cad)} each`;
+  f.quantity.max=l.quantity; f.quantity.value=l.quantity; f.fees.value=0; f.shipping.value=0; f.sold_at.value=today(); f.platform.value=l.platform||''; f.buyer.value=''; f.notes.value='';
+  const price=()=>{ if(l.asking_price_cad!=null) f.price.value=(l.asking_price_cad*(parseInt(f.quantity.value)||1)).toFixed(2); };
+  f.quantity.oninput=price; price();
+  const v=await ask(d); if(!v) return;
+  try{ await api('/api/listings/'+l.id+'/sell',{method:'POST',body:JSON.stringify({quantity:parseInt(v.quantity),sale_price_cad:num(v.price),fees_cad:num(v.fees)||0,shipping_cad:num(v.shipping)||0,sold_at:v.sold_at,platform:v.platform||null,buyer:v.buyer||null,notes:v.notes||null})});
+    toast('Sale recorded'); await reloadAll(); }catch(e){ toast(e.message); }
+}
+async function renderSales(){
+  let sales,rep; try{ [listings,sales,rep]=await Promise.all([api('/api/listings'),api('/api/sales'),api('/api/sales/report')]); }catch(e){ toast('Could not load sales'); return; }
+  $('#slActive').textContent=rep.active_listings.listings; $('#slAsking').textContent=fmt(rep.active_listings.asking_cad);
+  $('#slNet').textContent=fmt(rep.total.net_cad); $('#slSold').textContent=rep.total.cards;
+  const stCol={active:'var(--green)',sold:'var(--cyan)',cancelled:'#3a4170'};
+  $('#listTable').innerHTML=`<tr><th>Card</th><th>Cond.</th><th class="r">Qty</th><th class="r">Asking each</th><th class="r">Estimate</th><th>Platform</th><th>Status</th><th></th></tr>`+
+    (listings.map(l=>`<tr data-id="${l.id}"><td><b>${esc(l.name_fr)}</b> <span class="note">#${esc(l.number)} · ${esc(l.set_fr)}${l.first_edition?' · 1st Ed.':''}</span>${l.notes?`<br><span class="note">${esc(l.notes)}</span>`:''}</td>
+      <td><span class="pill" style="background:${GCOL[l.condition]};color:#111">${esc(l.condition)}</span></td><td class="r">${l.status==='active'?l.quantity:l.quantity_sold}</td><td class="r"><b>${fmt(l.asking_price_cad)}</b></td><td class="r">${fmt(l.suggested_price_cad)}</td>
+      <td>${/^https?:\/\//.test(l.url||'')?`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.platform||'link')}</a>`:esc(l.platform||'—')}</td>
+      <td><span class="pill" style="background:${stCol[l.status]};color:${l.status==='cancelled'?'var(--muted)':'#111'}">${l.status}</span></td>
+      <td class="r" style="white-space:nowrap">${l.status==='active'?`<button class="mini go" data-act="sold">✓ Sold</button> <button class="mini" data-act="cancel">Cancel</button>`:l.status==='cancelled'?`<button class="mini" data-act="relist">Relist</button>`:''}</td></tr>`).join('')||'<tr><td colspan=8 class="empty">No listings yet.</td></tr>');
+  $('#saleTable').innerHTML=`<tr><th>Date</th><th>Card</th><th>Cond.</th><th class="r">Qty</th><th class="r">Sold for</th><th class="r">Fees + ship.</th><th class="r">Net</th><th class="r">vs estimate</th><th>Platform / buyer</th><th></th></tr>`+
+    (sales.map(x=>{const diff=x.ref_value_cad==null?null:x.sale_price_cad-x.ref_value_cad;return `<tr data-id="${x.id}"><td>${esc(x.sold_at)}</td><td><b>${esc(x.name_fr)}</b> <span class="note">#${esc(x.number)} · ${esc(x.set_fr)}${x.first_edition?' · 1st Ed.':''}</span></td>
+      <td><span class="pill" style="background:${GCOL[x.condition]};color:#111">${esc(x.condition)}</span></td><td class="r">${x.quantity}</td><td class="r">${fmt(x.sale_price_cad)}</td><td class="r">${fmt(x.fees_cad+x.shipping_cad)}</td><td class="r"><b>${fmt(x.net_cad)}</b></td>
+      <td class="r ${diff==null?'':diff>=0?'pos':'neg'}">${diff==null?'—':(diff>=0?'+':'−')+fmt(Math.abs(diff))}</td><td>${esc([x.platform,x.buyer].filter(Boolean).join(' · ')||'—')}</td><td class="r"><button class="mini" data-act="undo" title="Delete this sale and put the cards back">Undo</button></td></tr>`}).join('')||'<tr><td colspan=10 class="empty">No sales yet.</td></tr>');
+  const head=k=>`<tr><th>${k}</th><th class="r">Sales</th><th class="r">Cards</th><th class="r">Gross</th><th class="r">Fees</th><th class="r">Shipping</th><th class="r">Net</th><th class="r">Estimate</th></tr>`;
+  const line=(label,b,bold)=>{const w=x=>bold?`<b>${x}</b>`:x;return `<tr><td>${w(esc(label))}</td><td class="r">${w(b.sales)}</td><td class="r">${w(b.cards)}</td><td class="r">${w(fmt(b.gross_cad))}</td><td class="r">${fmt(b.fees_cad)}</td><td class="r">${fmt(b.shipping_cad)}</td><td class="r"><b>${fmt(b.net_cad)}</b></td><td class="r">${fmt(b.ref_value_cad)}</td></tr>`};
+  const none='<tr><td colspan=8 class="empty">No sales yet.</td></tr>';
+  $('#monthTable').innerHTML=head('Month')+(rep.by_month.map(m=>line(m.month,m)).join('')+(rep.by_month.length?line('Total',rep.total,true):none));
+  $('#platTable').innerHTML=head('Platform')+(rep.by_platform.map(m=>line(m.platform,m)).join('')||none);
+}
+$('#listTable').addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b) return; const l=listings.find(x=>x.id==b.closest('tr').dataset.id);
+  if(b.dataset.act==='sold'){ openSell(l); return; }
+  try{ if(b.dataset.act==='cancel') await api('/api/listings/'+l.id,{method:'DELETE'}); else await api('/api/listings/'+l.id,{method:'PATCH',body:JSON.stringify({status:'active'})});
+    await reloadAll(); }catch(err){ toast(err.message); } });
+$('#saleTable').addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b) return;
+  if(!confirm('Undo this sale? The cards go back into your collection.')) return;
+  try{ await api('/api/sales/'+b.closest('tr').dataset.id,{method:'DELETE'}); toast('Sale undone'); await reloadAll(); }catch(err){ toast(err.message); } });
 
 // ---------- export / settings ----------
 $('#frFactor').value=Math.round(frFactor*100); const lbl=()=>{$('#frFactorLbl').textContent=Math.round(frFactor*100)+'%'}; lbl();

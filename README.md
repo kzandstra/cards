@@ -26,7 +26,8 @@ Windows without make: `uv run uvicorn app.main:app --reload`, `uv run pytest -q`
 | `app/pricing.py` | The only place pricing rules live (reference price, condition multipliers, FR adjustment). |
 | `app/routers/cards.py` | Read API: `/api/sets`, `/api/cards`, `/api/cards/{id}`, `/api/conditions`, `/api/settings`, `/api/rarities`. |
 | `app/routers/collection.py` | Write API: `PUT/DELETE /api/collection/{card_id}`, `POST /api/collection/bulk`, `GET /api/collection/summary`. |
-| `app/routers/export.py` | `/api/export/collection.csv`, `/api/export/prices.csv`, `/api/export/sqlite`. |
+| `app/routers/sales.py` | Sales: `GET/POST /api/listings`, `PATCH/DELETE /api/listings/{id}`, `POST /api/listings/{id}/sell`, `GET/POST /api/sales`, `DELETE /api/sales/{id}` (undo), `GET /api/sales/report`. |
+| `app/routers/export.py` | `/api/export/collection.csv`, `/api/export/prices.csv`, `/api/export/sales.csv`, `/api/export/sqlite`. |
 | `app/static/index.html` | The UI: set browser, tick cards, condition & quantity, value report, condition guide, exports. |
 | `scripts/refresh_prices.py` | Pull fresh Cardmarket/TCGplayer prices and EUR/USD→CAD rates (`make refresh-prices`). |
 | `scripts/backup_db.py` | Snapshot the DB into `backups/` (`make backup`). |
@@ -36,6 +37,7 @@ Windows without make: `uv run uvicorn app.main:app --reload`, `uv run pytest -q`
 
 - `sets`, `cards`, `prices`, `conditions` — reference data (don't edit by hand; `refresh_prices.py` updates `prices`).
 - `collection` — one row per card: `owned, quantity, condition, language, first_edition, notes`.
+- `listings`, `sales` — cards put up for sale and what actually sold (price, fees, shipping, platform, buyer). View `v_sales`.
 - `settings` — `eur_cad`, `usd_cad`, `fr_factor`, `price_date`, `price_basis`.
 - Views: `v_card_prices` (CAD price for all 7 conditions), `v_my_collection` (what you own, valued), `v_set_progress`.
 
@@ -49,7 +51,7 @@ conditions scale them: MT ×1.05 · NM ×1.00 · EX ×0.85 · GD ×0.70 · LP ×
 
 ## Roadmap (use with Claude Code — see CLAUDE.md)
 
-1. **Sales module**: `listings` + `sales` tables, `/api/listings`, `/api/sales`, report by month/platform, "create listing from card" in the UI.
+1. ✅ **Sales module** (done): `listings` + `sales` tables, `/api/listings`, `/api/sales`, report by month/platform, "create listing from card" in the UI.
 2. **Lot sheet export**: printable HTML/PDF grouping cards by set with condition and price, for selling bundles.
 3. **Price history chart**: `price_history` is already filled by `refresh_prices.py`; show a sparkline per card.
 4. **Images**: `cards.image_small/large` hold URLs (English prints); add `scripts/download_images.py` to cache them locally.

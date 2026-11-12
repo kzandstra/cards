@@ -28,5 +28,12 @@ Inventory + sale preparation for a French WotC-era Pokémon card collection (199
 - Don't add frameworks (no React, no ORM) without asking.
 
 ## Roadmap (see README)
-Done: setup, read API, collection API, UI wired to API, exports (CSV/SQLite), price-refresh script.
-Next: sales module (listings + sales tables, report), lot sheet export, price history, images cache.
+Done: setup, read API, collection API, UI wired to API, exports (CSV/SQLite), price-refresh script,
+sales module (`listings` + `sales` tables, `app/routers/sales.py`, "Sales" tab, report by month/platform).
+Next: lot sheet export, price history, images cache.
+
+## Sales rules
+- `listings.quantity` = copies still for sale; status `active | sold | cancelled`. Active listings can never exceed the owned quantity.
+- `sales` money columns (`sale_price_cad`, `fees_cad`, `shipping_cad`) are totals for the line; net = price − fees − shipping.
+- Recording a sale removes the copies from `collection` (`sales.removed_qty`); `DELETE /api/sales/{id}` puts them back and reopens the listing.
+- `DELETE /api/listings/{id}` cancels (never deletes) a listing.

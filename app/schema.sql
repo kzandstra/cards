@@ -45,3 +45,36 @@ SELECT s.id, s.name_fr, s.name_en, s.release_date, s.released_in_french,
        ROUND(SUM(CASE WHEN col.owned=1 THEN p.price_nm_cad*col.quantity ELSE 0 END),2) AS owned_value_nm_cad
 FROM sets s JOIN cards ca ON ca.set_id=s.id JOIN collection col ON col.card_id=ca.id LEFT JOIN prices p ON p.card_id=ca.id
 GROUP BY s.id ORDER BY s.sort_order;
+
+-- ---------- sales module (user data: migrations must preserve these) ----------
+-- listings.quantity = copies still for sale; status: active | sold | cancelled.
+CREATE TABLE IF NOT EXISTS listings(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  card_id TEXT NOT NULL REFERENCES cards(id),
+  quantity INTEGER NOT NULL DEFAULT 1,
+  condition TEXT REFERENCES conditions(code),
+  language TEXT DEFAULT 'FR', first_edition INTEGER DEFAULT 0,
+  asking_price_cad REAL,            -- per card
+  platform TEXT, url TEXT, notes TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT, updated_at TEXT);
+CREATE INDEX IF NOT EXISTS idx_listings_card ON listings(card_id, status);
+-- sales.sale_price_cad / fees_cad / shipping_cad are totals for the whole line (all copies).
+-- ref_value_cad = estimated value (app/pricing.py) at the time of sale; removed_qty = copies taken out of `collection`.
+CREATE TABLE IF NOT EXISTS sales(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  listing_id INTEGER REFERENCES listings(id),
+  card_id TEXT NOT NULL REFERENCES cards(id),
+  quantity INTEGER NOT NULL DEFAULT 1,
+  condition TEXT REFERENCES conditions(code),
+  language TEXT DEFAULT 'FR', first_edition INTEGER DEFAULT 0,
+  sale_price_cad REAL NOT NULL, fees_cad REAL NOT NULL DEFAULT 0, shipping_cad REAL NOT NULL DEFAULT 0,
+  ref_value_cad REAL, removed_qty INTEGER NOT NULL DEFAULT 0,
+  platform TEXT, buyer TEXT, sold_at TEXT NOT NULL, notes TEXT, created_at TEXT);
+CREATE INDEX IF NOT EXISTS idx_sales_sold_at ON sales(sold_at);
+CREATE VIEW IF NOT EXISTS v_sales AS
+SELECT sa.id, sa.sold_at, sa.platform, sa.buyer, sa.card_id, s.name_fr AS set_fr, ca.number, ca.name_fr, ca.name_en,
+       sa.quantity, sa.condition, sa.language, sa.first_edition, sa.sale_price_cad, sa.fees_cad, sa.shipping_cad,
+       ROUND(sa.sale_price_cad - sa.fees_cad - sa.shipping_cad, 2) AS net_cad, sa.ref_value_cad, sa.listing_id, sa.notes
+FROM sales sa JOIN cards ca ON ca.id=sa.card_id JOIN sets s ON s.id=ca.set_id
+ORDER BY sa.sold_at DESC, sa.id DESC;

@@ -34,6 +34,11 @@ def prices_csv(con: sqlite3.Connection = Depends(get_db)):
     return _csv(rows(con.execute("SELECT * FROM v_card_prices")), f"prix_cartes_{date.today()}.csv")
 
 
+@router.get("/sales.csv")
+def sales_csv(con: sqlite3.Connection = Depends(get_db)):
+    return _csv(rows(con.execute("SELECT * FROM v_sales")), f"ventes_{date.today()}.csv")
+
+
 @router.get("/sqlite")
 def sqlite_copy():
     """Consistent snapshot of the DB using the online backup API."""
