@@ -13,8 +13,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
 
-[tool.uv]
-dev-dependencies = ["pytest>=8", "ruff>=0.6"]
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
 
 [tool.ruff]
 line-length = 110
@@ -22,3 +22,7 @@ target-version = "py312"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency/parameter markers are meant to be used as argument defaults.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]

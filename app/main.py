@@ -1,4 +1,5 @@
 """FastAPI entry point. Run: uvicorn app.main:app --reload"""
+
 from __future__ import annotations
 
 from contextlib import asynccontextmanager

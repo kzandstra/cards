@@ -46,7 +46,13 @@ def test_collection_validation(client):
 
 
 def test_bulk_import_webapp_format(client):
-    body = {"items": {"base1-4": {"q": 1, "c": "NM", "fe": 1}, "base2-1": {"q": 3, "c": "LP"}, "base3-1": {"q": 0}}}
+    body = {
+        "items": {
+            "base1-4": {"q": 1, "c": "NM", "fe": 1},
+            "base2-1": {"q": 3, "c": "LP"},
+            "base3-1": {"q": 0},
+        }
+    }
     assert client.post("/api/collection/bulk", json=body).json()["imported"] == 2
     col = client.get("/api/collection").json()
     assert {c["card_id"] for c in col} == {"base1-4", "base2-1"}

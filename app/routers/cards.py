@@ -1,4 +1,5 @@
 """Read API: sets, cards, conditions, settings."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -30,7 +31,8 @@ def _decorate(con: sqlite3.Connection, cards: list[dict]) -> list[dict]:
         c["price_nm_cad_adj"] = pricing.price_for(c["price_nm_cad"], "NM", mult, "FR", st.fr_factor)
         c["unit_value_cad"] = (
             pricing.price_for(c["price_nm_cad"], c["condition"], mult, c["language"] or "FR", st.fr_factor)
-            if c.get("owned") else None
+            if c.get("owned")
+            else None
         )
         c["total_value_cad"] = (
             round(c["unit_value_cad"] * (c["quantity"] or 0), 2) if c["unit_value_cad"] is not None else None
@@ -71,7 +73,10 @@ def put_setting(key: str, body: dict, con: sqlite3.Connection = Depends(get_db))
     con.execute("UPDATE settings SET value=? WHERE key=?", (str(value), key))
     if key == "eur_cad":
         # price_nm_cad is derived; recompute it so the views stay consistent
-        con.execute("UPDATE prices SET price_nm_cad = ROUND(ref_price_eur * ?, 2) WHERE ref_price_eur IS NOT NULL", (value,))
+        con.execute(
+            "UPDATE prices SET price_nm_cad = ROUND(ref_price_eur * ?, 2) WHERE ref_price_eur IS NOT NULL",
+            (value,),
+        )
     return {"key": key, "value": value}
 
 
@@ -88,16 +93,19 @@ def list_cards(
 ):
     where, params = [], []
     if set:
-        where.append("ca.set_id = ?"); params.append(set)
+        where.append("ca.set_id = ?")
+        params.append(set)
     if q:
         like = f"%{q.strip()}%"
-        where.append("(ca.name_fr LIKE ? OR ca.name_en LIKE ? OR ca.number = ?)"); params += [like, like, q.strip()]
+        where.append("(ca.name_fr LIKE ? OR ca.name_en LIKE ? OR ca.number = ?)")
+        params += [like, like, q.strip()]
     if owned == 1:
         where.append("col.owned = 1")
     elif owned == 0:
         where.append("COALESCE(col.owned,0) = 0")
     if rarity:
-        where.append("ca.rarity = ?"); params.append(rarity)
+        where.append("ca.rarity = ?")
+        params.append(rarity)
     if fr_only:
         where.append("s.released_in_french = 1")
     sql = CARD_SELECT + (" WHERE " + " AND ".join(where) if where else "")
@@ -114,7 +122,9 @@ def get_card(card_id: str, con: sqlite3.Connection = Depends(get_db)):
         raise HTTPException(404, "card not found")
     card = _decorate(con, [dict(r)])[0]
     st = pricing.load_settings(con)
-    card["prices_by_condition"] = pricing.price_table(card["price_nm_cad"], pricing.load_multipliers(con), st.fr_factor)
+    card["prices_by_condition"] = pricing.price_table(
+        card["price_nm_cad"], pricing.load_multipliers(con), st.fr_factor
+    )
     return card
 
 

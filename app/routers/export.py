@@ -1,4 +1,5 @@
 """Exports: CSV of the collection, a copy of the SQLite file, full price list."""
+
 from __future__ import annotations
 
 import csv
@@ -19,9 +20,13 @@ def _csv(data: list[dict], filename: str) -> Response:
     buf.write("﻿")  # BOM so Excel opens UTF-8 (French accents) correctly
     if data:
         w = csv.DictWriter(buf, fieldnames=list(data[0].keys()))
-        w.writeheader(); w.writerows(data)
-    return Response(buf.getvalue(), media_type="text/csv; charset=utf-8",
-                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+        w.writeheader()
+        w.writerows(data)
+    return Response(
+        buf.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/collection.csv")
@@ -44,8 +49,12 @@ def sqlite_copy():
     """Consistent snapshot of the DB using the online backup API."""
     src = sqlite3.connect(db_path())
     mem = sqlite3.connect(":memory:")
-    src.backup(mem); src.close()
+    src.backup(mem)
+    src.close()
     data = mem.serialize()  # raw file bytes (Python 3.11+)
     mem.close()
-    return StreamingResponse(io.BytesIO(data), media_type="application/vnd.sqlite3",
-                             headers={"Content-Disposition": f'attachment; filename="pokemon_collection_{date.today()}.db"'})
+    return StreamingResponse(
+        io.BytesIO(data),
+        media_type="application/vnd.sqlite3",
+        headers={"Content-Disposition": f'attachment; filename="pokemon_collection_{date.today()}.db"'},
+    )

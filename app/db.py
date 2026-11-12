@@ -1,4 +1,5 @@
 """SQLite connection helpers and idempotent migrations."""
+
 from __future__ import annotations
 
 import os

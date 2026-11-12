@@ -8,6 +8,7 @@ Usage:
 Set POKEMONTCG_API_KEY in your environment for higher rate limits (free key at pokemontcg.io).
 Always run `make backup` first.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -21,8 +22,8 @@ from pathlib import Path
 import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from app import pricing  # noqa: E402
-from app.db import connect  # noqa: E402
+from app import pricing
+from app.db import connect
 
 API = "https://api.pokemontcg.io/v2/cards"
 FX = "https://api.frankfurter.app/latest"
@@ -35,7 +36,8 @@ def get_json(client: httpx.Client, url: str, params: dict | None = None, tries: 
             if r.status_code == 200:
                 return r.json()
             if r.status_code == 429:
-                time.sleep(5 * (i + 1)); continue
+                time.sleep(5 * (i + 1))
+                continue
         except httpx.HTTPError:
             pass
         time.sleep(2 * (i + 1))
@@ -44,21 +46,32 @@ def get_json(client: httpx.Client, url: str, params: dict | None = None, tries: 
 
 def fetch_rates(client: httpx.Client) -> tuple[float, float]:
     j = get_json(client, FX, {"from": "EUR", "to": "CAD,USD"})
-    eur_cad = float(j["rates"]["CAD"]); eur_usd = float(j["rates"]["USD"])
+    eur_cad = float(j["rates"]["CAD"])
+    eur_usd = float(j["rates"]["USD"])
     return eur_cad, round(eur_cad / eur_usd, 4)  # USD->CAD
 
 
 def fetch_set_prices(client: httpx.Client, set_id: str) -> list[dict]:
     out, page = [], 1
     while True:
-        j = get_json(client, API, {"q": f"set.id:{set_id}", "pageSize": 250, "page": page,
-                                   "select": "id,cardmarket,tcgplayer"})
+        j = get_json(
+            client,
+            API,
+            {"q": f"set.id:{set_id}", "pageSize": 250, "page": page, "select": "id,cardmarket,tcgplayer"},
+        )
         for c in j["data"]:
             cm = (c.get("cardmarket") or {}).get("prices") or {}
             tp = (c.get("tcgplayer") or {}).get("prices") or {}
             first = next(iter(tp.values()), {}) if tp else {}
-            out.append({"id": c["id"], "avg30": cm.get("avg30"), "trend": cm.get("trendPrice"),
-                        "tcg": first.get("market"), "updated": (c.get("cardmarket") or {}).get("updatedAt")})
+            out.append(
+                {
+                    "id": c["id"],
+                    "avg30": cm.get("avg30"),
+                    "trend": cm.get("trendPrice"),
+                    "tcg": first.get("market"),
+                    "updated": (c.get("cardmarket") or {}).get("updatedAt"),
+                }
+            )
         if len(j["data"]) < 250:
             return out
         page += 1
@@ -94,13 +107,15 @@ def main() -> int:
                     missing += 1
                 if args.dry_run:
                     continue
-                con.execute("""INSERT INTO prices(card_id, cardmarket_avg30_eur, cardmarket_trend_eur, tcgplayer_market_usd,
+                con.execute(
+                    """INSERT INTO prices(card_id, cardmarket_avg30_eur, cardmarket_trend_eur, tcgplayer_market_usd,
                                  ref_price_eur, ref_source, price_nm_cad, price_date) VALUES(?,?,?,?,?,?,?,?)
                                ON CONFLICT(card_id) DO UPDATE SET cardmarket_avg30_eur=excluded.cardmarket_avg30_eur,
                                  cardmarket_trend_eur=excluded.cardmarket_trend_eur, tcgplayer_market_usd=excluded.tcgplayer_market_usd,
                                  ref_price_eur=excluded.ref_price_eur, ref_source=excluded.ref_source,
                                  price_nm_cad=excluded.price_nm_cad, price_date=excluded.price_date""",
-                            (p["id"], p["avg30"], p["trend"], p["tcg"], ref, src, nm, today))
+                    (p["id"], p["avg30"], p["trend"], p["tcg"], ref, src, nm, today),
+                )
                 con.execute("INSERT OR REPLACE INTO price_history VALUES(?,?,?,?)", (p["id"], today, ref, nm))
                 updated += 1
             print(f"{sid}: {len(prices)} cards")
