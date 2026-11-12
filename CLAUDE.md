@@ -13,7 +13,8 @@ Inventory + sale preparation for a French WotC-era Pokémon card collection (199
 ## Data rules
 - `data/pokemon_collection.db` is the single source of truth. Schema lives in `app/schema.sql` and is applied idempotently by `app.db.migrate()` at startup. Add new tables/columns there (use `CREATE TABLE IF NOT EXISTS`; for new columns add an `ALTER TABLE` guarded in `migrate()`).
 - Tables `cards`, `sets`, `prices`, `conditions` are reference data: never delete rows; `scripts/refresh_prices.py` is the only writer of `prices`.
-- Exception: `POST /api/cards` lets the user add a missing card (`cards.is_custom = 1`, id `{set_id}-{number}`), with an optional manual price (`prices.ref_source = 'manual'`, `ref_price_eur` NULL so FX changes and refreshes leave it alone). Every card must have a `collection` row.
+- Exception — rows the user added (`cards.is_custom = 1`, `sets.is_custom = 1`): `POST/PUT/DELETE /api/cards` and `/api/sets` create, edit and delete them; reference rows answer 403. A custom card id is `{set_id}-{number}` and never changes, even if its number is corrected. Its optional manual price is `prices.ref_source = 'manual'` with `ref_price_eur` NULL, so FX changes and refreshes leave it alone. A card with sales cannot be deleted; a set must be empty to be deleted. Every card must have a `collection` row.
+- `v_set_progress` is dropped and recreated on every migration (LEFT JOINs, so empty sets are listed).
 - Tables `collection`, `listings`, `sales` are the user's data: migrations must preserve them.
 - All money is CAD, stored as REAL rounded to 2 decimals. Reference price = Cardmarket 30-day average sell price (EUR) × `settings.eur_cad`; fallback Cardmarket trend, then TCGplayer market USD × `settings.usd_cad`.
 - Condition codes and multipliers (Cardmarket scale) live in table `conditions`: MT 1.05, NM 1.00, EX 0.85, GD 0.70, LP 0.55, PL 0.40, PO 0.25. Pricing logic is in `app/pricing.py` — never duplicate it in SQL or JS.

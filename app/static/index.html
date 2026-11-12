@@ -122,6 +122,9 @@ details.panel summary{cursor:pointer;font-size:16px;font-weight:900}
 details.panel[open] summary{margin-bottom:8px}
 .form label.check{flex-direction:row;align-items:center;gap:8px;text-transform:none;font-size:13px;letter-spacing:0}
 .form label.check input{width:auto}
+[hidden]{display:none!important}
+.btn.danger{background:var(--red);color:#fff;margin-right:auto}
+.set .set-edit{position:absolute;right:10px;bottom:10px;padding:4px 8px}
 .sell-btn{padding:9px 10px;background:var(--yellow);color:#111;font-size:13px}
 .listed{font-size:11px;font-weight:900;color:var(--yellow);margin-top:6px}
 dialog{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;width:min(460px,94vw);box-shadow:var(--shadow)}
@@ -167,7 +170,8 @@ dialog h2{margin:0 0 4px;font-size:19px;font-weight:900}
       <li><b>Pick the set</b> in the tiles below (Set de Base, Jungle, Fossile…), or type the card's French or English name or its number in the search box.</li>
       <li><b>Press "+ I have this card"</b> on the card. It is saved to the database immediately — the badge top right shows "Saved ✓".</li>
       <li><b>Set the details</b>: quantity with − / +, the condition (MT → PO, see the Condition guide tab) and "1st Ed." if it has the stamp.</li>
-      <li><b>Card not in the list?</b> The database holds the cards of the 18 WotC-era sets. For anything else (a variant, a misprint, a promo that is missing) press <b>➕ Add a card</b> next to the search box and fill in the form; the new card then appears in its set like any other.</li>
+      <li><b>Card not in the list?</b> The database holds the cards of the 18 WotC-era sets. For anything else (a variant, a misprint, a promo that is missing) press <b>➕ Add a card</b> next to the search box and fill in the form; the new card then appears in its set like any other. Cards you added carry an "added" tag and an <b>✎ Edit</b> button to correct or delete them.</li>
+      <li><b>Set not in the list?</b> Press <b>➕ New set</b>, give it a name, then add its cards with ➕ Add a card. Sets you created show a ✎ button to rename or delete them.</li>
     </ol>
     <p class="note">To remove a card from your collection press "✓ I have it" again. To sell one, press 🏷 Sell.</p>
   </details>
@@ -180,6 +184,7 @@ dialog h2{margin:0 0 4px;font-size:19px;font-weight:900}
     <select id="rarity"><option value="">All rarities</option></select>
     <label class="toggle"><input type="checkbox" id="frOnly" checked> French-released sets only</label>
     <button class="btn gold" id="addCard">➕ Add a card</button>
+    <button class="btn alt" id="addSet">➕ New set</button>
   </div>
   <div class="grid" id="grid"></div>
 </section>
@@ -230,7 +235,7 @@ dialog h2{margin:0 0 4px;font-size:19px;font-weight:900}
 </section>
 
 <dialog id="dlgCard"><form method="dialog">
-  <h2>Add a card to the database</h2><div class="note">For a card that is missing from the lists. Cards already listed only need "+ I have this card".</div>
+  <h2 id="dlgCardTitle"></h2><div class="note" id="dlgCardSub"></div>
   <div class="form">
     <label class="wide">Set<select name="set_id"></select></label>
     <label>Card number<input name="number" required maxlength="10" pattern="[A-Za-z0-9]+" placeholder="e.g. 103"></label>
@@ -241,13 +246,24 @@ dialog h2{margin:0 0 4px;font-size:19px;font-weight:900}
     <label>Type<select name="types"><option value="">—<option>Colorless<option>Darkness<option>Fighting<option>Fire<option>Grass<option>Lightning<option>Metal<option>Psychic<option>Water</select></label>
     <label>HP / PV<input name="hp" inputmode="numeric" pattern="[0-9]*" maxlength="4"></label>
     <label>Near-Mint price (CAD, optional)<input type="number" name="price" min="0" step="0.01"></label>
-    <label class="check wide"><input type="checkbox" name="own" checked> I own this card — add it to my collection</label>
-    <label>Quantity<input type="number" name="quantity" min="1" max="999" step="1" value="1"></label>
-    <label>Condition<select name="condition"></select></label>
-    <label class="check wide"><input type="checkbox" name="fe"> 1st Edition stamp</label>
+    <label class="check wide newonly"><input type="checkbox" name="own" checked> I own this card — add it to my collection</label>
+    <label class="newonly">Quantity<input type="number" name="quantity" min="1" max="999" step="1" value="1"></label>
+    <label class="newonly">Condition<select name="condition"></select></label>
+    <label class="check wide newonly"><input type="checkbox" name="fe"> 1st Edition stamp</label>
   </div>
   <div class="note">A price you type here is your own estimate; <code>make refresh-prices</code> never changes it.</div>
-  <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn alt" value="cancel" formnovalidate>Cancel</button><button class="btn gold" value="ok">Add card</button></div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn danger" value="delete" formnovalidate id="dlgCardDel">🗑 Delete card</button><button class="btn alt" value="cancel" formnovalidate>Cancel</button><button class="btn gold" value="ok" id="dlgCardOk"></button></div>
+</form></dialog>
+<dialog id="dlgSet"><form method="dialog">
+  <h2 id="dlgSetTitle"></h2><div class="note">For a set that is not among the 18 WotC-era sets. Add its cards afterwards with ➕ Add a card.</div>
+  <div class="form">
+    <label class="wide">French name<input name="name_fr" required maxlength="80"></label>
+    <label class="wide">English name (optional)<input name="name_en" maxlength="80"></label>
+    <label>Release date (optional)<input type="date" name="release_date"></label>
+    <label>Cards in the set (optional)<input type="number" name="printed_total" min="0" max="9999" step="1"></label>
+    <label class="check wide"><input type="checkbox" name="fr" checked> Released in French</label>
+  </div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn danger" value="delete" formnovalidate id="dlgSetDel">🗑 Delete set</button><button class="btn alt" value="cancel" formnovalidate>Cancel</button><button class="btn gold" value="ok" id="dlgSetOk"></button></div>
 </form></dialog>
 <dialog id="dlgList"><form method="dialog">
   <h2>List for sale</h2><div class="note" id="dlgListCard"></div>
@@ -346,6 +362,7 @@ async function refreshSets(){ try{ sets=await api('/api/sets'); renderSets(); }c
 let ui={set:'base1',q:'',own:'all',rarity:'',frOnly:true,view:'collection'};
 try{Object.assign(ui,JSON.parse(localStorage.getItem('pkm-ui')||'{}'));}catch(e){}
 const saveUi=()=>{try{localStorage.setItem('pkm-ui',JSON.stringify(ui));}catch(e){}};
+if(!sets.find(s=>s.id===ui.set)) ui.set='base1';
 $('#frOnly').checked=ui.frOnly; $('#q').value=ui.q;
 [...new Set(cards.map(c=>c.rarity).filter(Boolean))].sort().forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;$('#rarity').append(o)});
 $('#rarity').value=ui.rarity;
@@ -357,10 +374,10 @@ function stats(){ let n=0,v=0,nm=0; const started=new Set();
 
 // ---------- sets ----------
 function renderSets(){ const el=$('#sets'); el.innerHTML='';
-  for(const s of sets){ if(ui.frOnly&&!s.released_in_french) continue; const total=s.cards_in_set, o=cards.filter(c=>c.set_id===s.id&&owned(c)).length; const pct=Math.round(100*o/total);
+  for(const s of sets){ if(ui.frOnly&&!s.released_in_french) continue; const total=s.cards_in_set, o=cards.filter(c=>c.set_id===s.id&&owned(c)).length; const pct=total?Math.round(100*o/total):0;
     const d=document.createElement('div'); d.className='set'+(ui.set===s.id?' on':'')+(s.released_in_french?'':' nofr');
-    d.innerHTML=`<h3>${esc(s.name_fr)}</h3><small>${esc(s.name_en)} · ${s.release_date.slice(0,4)} · ${total} cards</small><span class="pct">${pct}%</span><div class="bar"><i style="width:${pct}%"></i></div><small>${o} / ${total} owned</small>`;
-    d.onclick=()=>{ui.set=s.id;saveUi();renderSets();renderGrid();}; el.append(d);} }
+    d.innerHTML=`<h3>${esc(s.name_fr)}</h3><small>${esc(s.name_en)} · ${(s.release_date||'').slice(0,4)} · ${total} cards</small><span class="pct">${pct}%</span><div class="bar"><i style="width:${pct}%"></i></div><small>${o} / ${total} owned</small>${s.is_custom?'<button class="mini set-edit" title="Rename or delete this set">✎</button>':''}`;
+    d.onclick=e=>{ if(e.target.closest('.set-edit')){ openSetDialog(s); return; } ui.set=s.id;saveUi();renderSets();renderGrid();}; el.append(d);} }
 
 // ---------- grid ----------
 function renderGrid(){ const g=$('#grid'); const q=ui.q.trim().toLowerCase();
@@ -375,8 +392,8 @@ function cardHtml(c){ const on=owned(c); const t=(c.types||'').split(',')[0]; co
     c.supertype==='Energy'?`<span class="badge energy">Energy</span>`:`<span class="badge trainer">Trainer${c.rarity?' · '+esc(rarityShort(c.rarity)):''}</span>`;
   return `<div class="c ${on?'own':''}" data-id="${c.id}">
     <div class="type" style="--t:${TYPE[t]||'#555'}"></div>
-    <div class="top"><div><div class="num">#${esc(c.number)} / ${c.printed_total} · ${esc(s.name_fr)}</div>
-      <div class="name">${esc(c.name_fr)}${c.is_custom?' <span class="pill" title="Added by you">added</span>':''}</div><div class="en">${[c.name_en!==c.name_fr?esc(c.name_en):'',c.hp?c.hp+' PV':''].filter(Boolean).join(' · ')}</div></div>${badge}</div>
+    <div class="top"><div><div class="num">#${esc(c.number)}${c.printed_total?' / '+c.printed_total:''} · ${esc(s.name_fr)}</div>
+      <div class="name">${esc(c.name_fr)}${c.is_custom?' <span class="pill" title="Added by you">added</span> <button class="mini" data-act="edit" title="Correct or delete this card">✎ Edit</button>':''}</div><div class="en">${[c.name_en!==c.name_fr?esc(c.name_en):'',c.hp?c.hp+' PV':''].filter(Boolean).join(' · ')}</div></div>${badge}</div>
     <div class="price ${c.price_nm_cad==null?'na':''}"><b>${c.price_nm_cad==null?'no market price':fmt(nmAdj(c))}</b><small>Near Mint · CAD</small></div>
     <div class="act"><button class="own-btn ${on?'on':''}" data-act="own">${on?'✓ I have it':'+ I have this card'}</button>
       ${on?`<div class="qty"><button data-act="dec">−</button><span>${c.quantity}</span><button data-act="inc">+</button></div><button class="sell-btn" data-act="sell" title="List this card for sale">🏷 Sell</button>`:''}</div>
@@ -385,8 +402,9 @@ function cardHtml(c){ const on=owned(c); const t=(c.types||'').split(',')[0]; co
       ${listedQty(c.id)?`<div class="listed">🏷 ${listedQty(c.id)} listed for sale</div>`:''}
       <div class="val">${c.condition?esc(condBy[c.condition].name_fr):'Pick a condition'} ${u!=null?`→ <b>${fmt(u)}</b>${c.quantity>1?' each · '+fmt(u*c.quantity)+' total':''}`:''}${c.first_edition?' · <span class="pill" style="background:var(--yellow);color:#111">1st Ed. — not priced automatically</span>':''}</div>`:''}
   </div>`; }
-$('#grid').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.act==='add'){ openAddCard(); return; } const el=e.target.closest('.c'); const c=byId[el.dataset.id]; const act=b.dataset.act;
+$('#grid').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.act==='add'){ openCardDialog(); return; } const el=e.target.closest('.c'); const c=byId[el.dataset.id]; const act=b.dataset.act;
   if(act==='sell'){ openListing(c); return; }
+  if(act==='edit'){ openCardDialog(c); return; }
   if(act==='own'){ if(owned(c)){ c.owned=0;c.quantity=0;c.condition=null;c.first_edition=0; } else { c.owned=1;c.quantity=1;c.condition='NM';c.first_edition=0;c.language='FR'; } }
   else if(act==='inc'){ c.quantity++; } else if(act==='dec'){ c.quantity--; if(c.quantity<=0){c.owned=0;c.quantity=0;c.condition=null;} }
   else if(act==='cond'){ c.condition=b.dataset.c; } else if(act==='fe'){ c.first_edition=c.first_edition?0:1; }
@@ -414,24 +432,51 @@ function renderValue(){ const rowsS=[]; let T={n:0,v:0,nm:0};
   const top=cards.filter(owned).map(c=>({c,u:unit(c)})).filter(x=>x.u!=null).sort((a,b)=>b.u*b.c.quantity-a.u*a.c.quantity).slice(0,25);
   $('#topTable').innerHTML=`<tr><th>Card</th><th>Set</th><th>Cond.</th><th class="r">Qty</th><th class="r">Each</th><th class="r">Total</th></tr>`+(top.map(x=>`<tr><td><b>${esc(x.c.name_fr)}</b> <span class="note">#${esc(x.c.number)}${x.c.first_edition?' · 1st Ed.':''}</span></td><td>${esc(setOf(x.c).name_fr)}</td><td><span class="pill" style="background:${GCOL[x.c.condition]};color:#111">${x.c.condition}</span></td><td class="r">${x.c.quantity}</td><td class="r">${fmt(x.u)}</td><td class="r"><b>${fmt(x.u*x.c.quantity)}</b></td></tr>`).join('')||'<tr><td colspan=6 class="empty">Nothing yet.</td></tr>'); }
 
-// ---------- add a card to the database ----------
-async function openAddCard(){
-  const d=$('#dlgCard'), f=d.querySelector('form');
-  f.set_id.innerHTML=sets.map(s=>`<option value="${s.id}">${esc(s.name_fr)}</option>`).join(''); f.set_id.value=ui.set;
+// ---------- add / edit / delete a card, create / edit / delete a set ----------
+function showSet(id){ const st=sets.find(x=>x.id===id); ui.set=st?id:'base1'; ui.q=''; ui.own='all'; ui.rarity=''; if(st&&!st.released_in_french) ui.frOnly=false; saveUi();
+  $('#q').value=''; $('#rarity').value=''; $('#frOnly').checked=ui.frOnly; $$('#ownFilter button').forEach(x=>x.classList.toggle('on',x.dataset.f==='all')); }
+// card = null: add a new card; card = a card you added: edit or delete it.
+async function openCardDialog(card){
+  const d=$('#dlgCard'), f=d.querySelector('form'), edit=!!card;
+  $('#dlgCardTitle').textContent=edit?'Edit card':'Add a card to the database';
+  $('#dlgCardSub').textContent=edit?'Correct a card you added. Quantity and condition are changed on the card itself.':'For a card that is missing from the lists. Cards already listed only need "+ I have this card".';
+  $('#dlgCardOk').textContent=edit?'Save changes':'Add card'; $('#dlgCardDel').hidden=!edit; d.querySelectorAll('.newonly').forEach(x=>x.hidden=edit);
+  f.set_id.innerHTML=sets.map(x=>`<option value="${x.id}">${esc(x.name_fr)}</option>`).join(''); f.set_id.value=edit?card.set_id:ui.set; f.set_id.disabled=edit;
   f.condition.innerHTML=conds.map(k=>`<option value="${k.code}">${k.code} · ${esc(k.name_fr)}</option>`).join(''); f.condition.value='NM';
-  const q=ui.q.trim(), isNum=/^[0-9]+$/.test(q); f.number.value=isNum?q:''; f.name_fr.value=isNum?'':q; f.name_en.value=''; f.hp.value=''; f.price.value=''; f.rarity.value=''; f.types.value=''; f.supertype.value='Pokémon';
+  if(edit){ f.number.value=card.number; f.name_fr.value=card.name_fr; f.name_en.value=card.name_en===card.name_fr?'':card.name_en; f.hp.value=card.hp||''; f.price.value=card.price_nm_cad==null?'':card.price_nm_cad;
+    f.rarity.value=card.rarity||''; f.types.value=(card.types||'').split(',')[0]; f.supertype.value=card.supertype||'Pokémon'; }
+  else{ const q=ui.q.trim(), isNum=/^[0-9]+$/.test(q); f.number.value=isNum?q:''; f.name_fr.value=isNum?'':q; f.name_en.value=''; f.hp.value=''; f.price.value=''; f.rarity.value=''; f.types.value=''; f.supertype.value='Pokémon'; }
   f.own.checked=true; f.fe.checked=false; f.quantity.value=1;
-  const sync=()=>{ for(const n of ['quantity','condition','fe']) f[n].disabled=!f.own.checked; }; f.own.onchange=sync; sync();
+  const sync=()=>{ for(const n of ['quantity','condition','fe']) f[n].disabled=edit||!f.own.checked; }; f.own.onchange=sync; sync();
   const v=await ask(d); if(!v) return;
-  const own=f.own.checked;
-  try{ const c=await api('/api/cards',{method:'POST',body:JSON.stringify({set_id:v.set_id,number:v.number.trim(),name_fr:v.name_fr.trim(),name_en:v.name_en.trim()||null,supertype:v.supertype,rarity:v.rarity,types:v.types,hp:v.hp||null,
-      price_nm_cad:num(v.price),quantity:own?parseInt(v.quantity)||1:0,condition:own?v.condition:null,first_edition:own&&f.fe.checked})});
-    ui.set=c.set_id; ui.q=''; ui.own='all'; ui.rarity=''; if(!sets.find(s=>s.id===c.set_id).released_in_french) ui.frOnly=false; saveUi();
-    $('#q').value=''; $('#rarity').value=''; $('#frOnly').checked=ui.frOnly; $$('#ownFilter button').forEach(x=>x.classList.toggle('on',x.dataset.f==='all'));
-    await reloadAll(); toast(c.name_fr+' added'); const el=document.querySelector(`.c[data-id="${c.id}"]`); if(el) el.scrollIntoView({block:'center'});
+  try{
+    if(v._action==='delete'){ if(!confirm(`Delete ${card.name_fr} #${card.number} from the database? This also removes it from your collection and cancels its listings.`)) return;
+      await api('/api/cards/'+card.id,{method:'DELETE'}); await reloadAll(); toast(card.name_fr+' deleted'); return; }
+    const fields={number:v.number.trim(),name_fr:v.name_fr.trim(),name_en:v.name_en.trim()||null,supertype:v.supertype,rarity:v.rarity,types:v.types,hp:v.hp||null,price_nm_cad:num(v.price)};
+    let c;
+    if(edit){ clearTimeout(timers[card.id]); c=await api('/api/cards/'+card.id,{method:'PUT',body:JSON.stringify(fields)}); await reloadAll(); toast(c.name_fr+' updated'); }
+    else{ const own=f.own.checked;
+      c=await api('/api/cards',{method:'POST',body:JSON.stringify(Object.assign(fields,{set_id:v.set_id,quantity:own?parseInt(v.quantity)||1:0,condition:own?v.condition:null,first_edition:own&&f.fe.checked}))});
+      showSet(c.set_id); await reloadAll(); toast(c.name_fr+' added'); }
+    const el=document.querySelector(`.c[data-id="${c.id}"]`); if(el) el.scrollIntoView({block:'center'});
   }catch(e){ toast(e.message); }
 }
-$('#addCard').onclick=openAddCard;
+// st = null: create a set; st = a set you created: rename or delete it.
+async function openSetDialog(st){
+  const d=$('#dlgSet'), f=d.querySelector('form'), edit=!!st;
+  $('#dlgSetTitle').textContent=edit?'Edit set':'Create a new set'; $('#dlgSetOk').textContent=edit?'Save changes':'Create set'; $('#dlgSetDel').hidden=!edit;
+  f.name_fr.value=edit?st.name_fr:''; f.name_en.value=edit&&st.name_en!==st.name_fr?st.name_en:''; f.release_date.value=edit?(st.release_date||''):''; f.printed_total.value=edit&&st.printed_total!=null?st.printed_total:''; f.fr.checked=edit?!!st.released_in_french:true;
+  const v=await ask(d); if(!v) return;
+  try{
+    if(v._action==='delete'){ if(!confirm(`Delete the set ${st.name_fr}?`)) return;
+      await api('/api/sets/'+st.id,{method:'DELETE'}); if(ui.set===st.id) ui.set='base1'; saveUi(); await reloadAll(); toast('Set deleted'); return; }
+    const body={name_fr:v.name_fr.trim(),name_en:v.name_en.trim()||null,release_date:v.release_date||null,printed_total:v.printed_total===''?null:parseInt(v.printed_total),released_in_french:f.fr.checked};
+    const r=edit?await api('/api/sets/'+st.id,{method:'PUT',body:JSON.stringify(body)}):await api('/api/sets',{method:'POST',body:JSON.stringify(body)});
+    await loadAll(); showSet(r.id); stats(); renderSets(); renderGrid(); toast(edit?'Set updated':r.name_fr+' created — now add its cards');
+  }catch(e){ toast(e.message); }
+}
+$('#addCard').onclick=()=>openCardDialog();
+$('#addSet').onclick=()=>openSetDialog();
 if(!cards.some(owned)) $('#howto').open=true;
 
 // ---------- sales ----------
@@ -439,7 +484,7 @@ function listedQty(id){ return listings.filter(l=>l.card_id===id&&l.status==='ac
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const num=v=>v===''||v==null?null:parseFloat(v);
 // Opens a <dialog>, resolves with the form values on OK or null on cancel.
-function ask(dlg){ return new Promise(res=>{ dlg.returnValue=''; dlg.showModal(); dlg.addEventListener('close',()=>res(dlg.returnValue==='ok'?Object.fromEntries(new FormData(dlg.querySelector('form'))):null),{once:true}); }); }
+function ask(dlg){ return new Promise(res=>{ dlg.returnValue=''; dlg.showModal(); dlg.addEventListener('close',()=>res(dlg.returnValue==='ok'||dlg.returnValue==='delete'?Object.assign(Object.fromEntries(new FormData(dlg.querySelector('form'))),{_action:dlg.returnValue}):null),{once:true}); }); }
 async function reloadAll(){ await loadAll(); stats(); renderSets(); renderGrid(); if(ui.view==='sales') await renderSales(); }
 async function openListing(c){
   clearTimeout(timers[c.id]);  // flush any pending edit so the server sees the current quantity/condition

@@ -134,3 +134,86 @@ def test_create_custom_card_defaults_and_validation(client):
     bad = {"set_id": "base1", "number": "201", "name_fr": "x", "quantity": 1, "condition": "ZZ"}
     assert client.post("/api/cards", json=bad).status_code == 422
     assert client.get("/api/cards/base1-201").status_code == 404  # nothing half-created
+
+
+def test_edit_and_delete_custom_card(client):
+    new = {"set_id": "base1", "number": "103", "name_fr": "Faute", "price_nm_cad": 10, "quantity": 1}
+    cid = client.post("/api/cards", json=new).json()["id"]
+    fix = {
+        "number": "104",
+        "name_fr": "Corrigé",
+        "name_en": "Fixed",
+        "rarity": "Rare",
+        "hp": "70",
+        "price_nm_cad": 12.5,
+    }
+    r = client.put(f"/api/cards/{cid}", json=fix)
+    assert r.status_code == 200
+    c = r.json()
+    assert (c["id"], c["number"], c["number_sort"], c["name_fr"], c["name_en"]) == (
+        cid,
+        "104",
+        104,
+        "Corrigé",
+        "Fixed",
+    )
+    assert c["price_nm_cad"] == 12.5 and c["quantity"] == 1  # the collection entry is untouched
+    assert client.put(f"/api/cards/{cid}", json={**fix, "price_nm_cad": None}).json()["price_nm_cad"] is None
+    assert client.put(f"/api/cards/{cid}", json={**fix, "number": "4"}).status_code == 409
+    assert client.put(f"/api/cards/{cid}", json={**fix, "name_fr": ""}).status_code == 422
+    assert client.put("/api/cards/base1-4", json=fix).status_code == 403  # reference data is read-only
+    assert client.put("/api/cards/nope-1", json=fix).status_code == 404
+    # the freed number can be reused even though the first card keeps its id
+    again = client.post("/api/cards", json={"set_id": "base1", "number": "103", "name_fr": "Autre"}).json()
+    assert again["id"] != cid and again["number"] == "103"
+
+    assert client.delete("/api/cards/base1-4").status_code == 403
+    assert client.delete("/api/cards/nope-1").status_code == 404
+    lst = client.post("/api/listings", json={"card_id": cid, "asking_price_cad": 5}).json()
+    sale = client.post(f"/api/listings/{lst['id']}/sell", json={}).json()["sale"]
+    assert client.delete(f"/api/cards/{cid}").status_code == 409  # sales history protects the card
+    client.delete(f"/api/sales/{sale['id']}")
+    assert client.delete(f"/api/cards/{cid}").json() == {"deleted": cid}
+    assert client.get(f"/api/cards/{cid}").status_code == 404
+    assert client.get("/api/listings").json() == [] and client.get("/api/collection").json() == []
+    assert client.get("/api/cards", params={"set": "base1"}).json()["total"] == 103
+
+
+def test_custom_sets(client):
+    r = client.post(
+        "/api/sets", json={"name_fr": "Promos Divers", "release_date": "2001-05-01", "printed_total": 12}
+    )
+    assert r.status_code == 201
+    s = r.json()
+    assert s["is_custom"] == 1 and s["cards_in_set"] == 0 and s["owned"] == 0 and s["released_in_french"] == 1
+    assert s["name_en"] == "Promos Divers" and s["release_date"] == "2001-05-01" and s["printed_total"] == 12
+    sets = client.get("/api/sets").json()
+    assert len(sets) == 19 and sets[-1]["id"] == s["id"] and sum(x["is_custom"] for x in sets) == 1
+    assert client.post("/api/sets", json={"name_fr": "promos divers"}).status_code == 409
+    assert client.post("/api/sets", json={"name_fr": "Jungle"}).status_code == 409
+    assert client.post("/api/sets", json={"name_fr": ""}).status_code == 422
+
+    card = client.post(
+        "/api/cards", json={"set_id": s["id"], "number": "1", "name_fr": "Pikachu", "quantity": 1}
+    ).json()
+    assert card["set_fr"] == "Promos Divers" and card["printed_total"] == 12
+    got = next(x for x in client.get("/api/sets").json() if x["id"] == s["id"])
+    assert got["cards_in_set"] == 1 and got["owned"] == 1 and got["pct_complete"] == 100
+
+    up = client.put(
+        f"/api/sets/{s['id']}",
+        json={"name_fr": "Promos FR", "name_en": "FR promos", "released_in_french": False},
+    )
+    assert (
+        up.status_code == 200 and up.json()["name_fr"] == "Promos FR" and up.json()["released_in_french"] == 0
+    )
+    assert up.json()["release_date"] == "2001-05-01" and up.json()["printed_total"] is None
+    assert client.put(f"/api/sets/{s['id']}", json={"name_fr": "Jungle"}).status_code == 409
+    assert client.put("/api/sets/base1", json={"name_fr": "x"}).status_code == 403
+    assert client.put("/api/sets/nope", json={"name_fr": "x"}).status_code == 404
+
+    assert client.delete("/api/sets/base1").status_code == 403
+    assert client.delete(f"/api/sets/{s['id']}").status_code == 409  # not empty
+    client.delete(f"/api/cards/{card['id']}")
+    assert client.delete(f"/api/sets/{s['id']}").json() == {"deleted": s["id"]}
+    assert len(client.get("/api/sets").json()) == 18

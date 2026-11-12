@@ -24,7 +24,7 @@ Windows without make: `uv run uvicorn app.main:app --reload`, `uv run pytest -q`
 | `data/pokemon_collection.db` | **The database.** 18 sets, 1,789 cards (French + English names), Cardmarket-based prices in CAD, condition table, your collection. |
 | `app/schema.sql` | Schema (tables + views), applied idempotently at startup. |
 | `app/pricing.py` | The only place pricing rules live (reference price, condition multipliers, FR adjustment). |
-| `app/routers/cards.py` | Read API: `/api/sets`, `/api/cards`, `/api/cards/{id}`, `POST /api/cards` (add a missing card), `/api/conditions`, `/api/settings`, `/api/rarities`. |
+| `app/routers/cards.py` | Read API: `/api/sets`, `/api/cards`, `/api/cards/{id}`, `POST/PUT/DELETE /api/cards` and `/api/sets` (add, correct or delete your own cards and sets), `/api/conditions`, `/api/settings`, `/api/rarities`. |
 | `app/routers/collection.py` | Write API: `PUT/DELETE /api/collection/{card_id}`, `POST /api/collection/bulk`, `GET /api/collection/summary`. |
 | `app/routers/sales.py` | Sales: `GET/POST /api/listings`, `PATCH/DELETE /api/listings/{id}`, `POST /api/listings/{id}/sell`, `GET/POST /api/sales`, `DELETE /api/sales/{id}` (undo), `GET /api/sales/report`. |
 | `app/routers/export.py` | `/api/export/collection.csv`, `/api/export/prices.csv`, `/api/export/sales.csv`, `/api/export/sqlite`. |

@@ -38,12 +38,14 @@ FROM collection col JOIN cards ca ON ca.id=col.card_id JOIN sets s ON s.id=ca.se
 LEFT JOIN prices p ON p.card_id=ca.id LEFT JOIN conditions cond ON cond.code=col.condition
 WHERE col.owned=1
 ORDER BY total_value_cad DESC;
-CREATE VIEW IF NOT EXISTS v_set_progress AS
+-- Recreated on every migration (a view holds no data): LEFT JOINs so that a new, still empty set is listed.
+DROP VIEW IF EXISTS v_set_progress;
+CREATE VIEW v_set_progress AS
 SELECT s.id, s.name_fr, s.name_en, s.release_date, s.released_in_french,
-       COUNT(ca.id) AS cards_in_set, SUM(col.owned) AS owned,
-       ROUND(100.0*SUM(col.owned)/COUNT(ca.id),1) AS pct_complete,
-       ROUND(SUM(CASE WHEN col.owned=1 THEN p.price_nm_cad*col.quantity ELSE 0 END),2) AS owned_value_nm_cad
-FROM sets s JOIN cards ca ON ca.set_id=s.id JOIN collection col ON col.card_id=ca.id LEFT JOIN prices p ON p.card_id=ca.id
+       COUNT(ca.id) AS cards_in_set, COALESCE(SUM(col.owned),0) AS owned,
+       COALESCE(ROUND(100.0*SUM(col.owned)/COUNT(ca.id),1),0) AS pct_complete,
+       ROUND(COALESCE(SUM(CASE WHEN col.owned=1 THEN p.price_nm_cad*col.quantity ELSE 0 END),0),2) AS owned_value_nm_cad
+FROM sets s LEFT JOIN cards ca ON ca.set_id=s.id LEFT JOIN collection col ON col.card_id=ca.id LEFT JOIN prices p ON p.card_id=ca.id
 GROUP BY s.id ORDER BY s.sort_order;
 
 -- ---------- sales module (user data: migrations must preserve these) ----------
