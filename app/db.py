@@ -29,6 +29,7 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
 # Columns added after the initial schema: (table, column, DDL). Guarded so they run once.
 _EXTRA_COLUMNS: list[tuple[str, str, str]] = [
     # ("collection", "purchase_price_cad", "REAL"),
+    ("cards", "is_custom", "INTEGER DEFAULT 0"),  # 1 = added by the user through POST /api/cards
 ]
 
 

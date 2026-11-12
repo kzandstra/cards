@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import re
 import sqlite3
+from datetime import UTC, date, datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from app import pricing
 from app.db import get_db, rows
@@ -14,7 +18,7 @@ router = APIRouter(prefix="/api", tags=["cards"])
 CARD_SELECT = """
 SELECT ca.id, ca.set_id, s.name_fr AS set_fr, s.name_en AS set_en, s.printed_total, s.released_in_french,
        ca.number, ca.number_sort, ca.name_fr, ca.name_en, ca.supertype, ca.rarity, ca.is_holo, ca.types, ca.hp,
-       ca.artist, ca.dex_number, ca.image_small, ca.image_large,
+       ca.artist, ca.dex_number, ca.image_small, ca.image_large, ca.is_custom,
        p.price_nm_cad, p.ref_price_eur, p.ref_source, p.price_date,
        col.owned, col.quantity, col.condition, col.language, col.first_edition, col.notes, col.updated_at
 FROM cards ca
@@ -113,6 +117,66 @@ def list_cards(
     sql += " ORDER BY s.sort_order, ca.number_sort LIMIT ? OFFSET ?"
     items = _decorate(con, rows(con.execute(sql, [*params, limit, offset])))
     return {"total": total, "limit": limit, "offset": offset, "items": items}
+
+
+class NewCard(BaseModel):
+    """A card missing from the reference data, added by hand. `price_nm_cad` is an optional manual
+    Near-Mint price in CAD; `quantity` > 0 also puts the card in the collection."""
+
+    set_id: str
+    number: str = Field(min_length=1, max_length=10, pattern=r"^[A-Za-z0-9]+$")
+    name_fr: str = Field(min_length=1, max_length=80)
+    name_en: str | None = Field(None, max_length=80)
+    supertype: Literal["Pokémon", "Trainer", "Energy"] = "Pokémon"
+    rarity: str = Field("", max_length=30)
+    is_holo: bool = False
+    types: str = Field("", max_length=40)
+    hp: str | None = Field(None, max_length=4, pattern=r"^[0-9]*$")
+    price_nm_cad: float | None = Field(None, ge=0)
+    quantity: int = Field(0, ge=0, le=999)
+    condition: str | None = None
+    first_edition: bool = False
+
+
+@router.post("/cards", status_code=201)
+def create_card(body: NewCard, con: sqlite3.Connection = Depends(get_db)):
+    if not con.execute("SELECT 1 FROM sets WHERE id=?", (body.set_id,)).fetchone():
+        raise HTTPException(404, f"unknown set {body.set_id}")
+    number = body.number.strip()
+    card_id = f"{body.set_id}-{number}"
+    dup = con.execute(
+        "SELECT name_fr FROM cards WHERE set_id=? AND (id=? OR number=? COLLATE NOCASE)",
+        (body.set_id, card_id, number),
+    ).fetchone()
+    if dup:
+        raise HTTPException(409, f"card #{number} already exists in this set ({dup['name_fr']})")
+    condition = body.condition or ("NM" if body.quantity else None)
+    if condition and not con.execute("SELECT 1 FROM conditions WHERE code=?", (condition,)).fetchone():
+        raise HTTPException(422, f"unknown condition {condition}")
+    name_fr = body.name_fr.strip()
+    digits = re.match(r"\d+", number)
+    con.execute(
+        """INSERT INTO cards(id, set_id, number, number_sort, name_en, name_fr, supertype, rarity, is_holo, types, hp, is_custom)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,1)""",
+        (card_id, body.set_id, number, int(digits.group()) if digits else 9999, (body.name_en or "").strip() or name_fr,
+         name_fr, body.supertype, body.rarity.strip(), int(body.is_holo or "Holo" in body.rarity), body.types.strip(),
+         body.hp or None),
+    )  # fmt: skip
+    if body.price_nm_cad is not None:
+        # Manual price for a user-added card (ref_price_eur stays NULL so FX updates never touch it).
+        con.execute(
+            "INSERT INTO prices(card_id, ref_source, price_nm_cad, price_date) VALUES(?,?,?,?)",
+            (card_id, "manual", round(body.price_nm_cad, 2), date.today().isoformat()),
+        )
+    # Every card has a collection row (v_set_progress relies on it).
+    owned = 1 if body.quantity else 0
+    con.execute(
+        """INSERT INTO collection(card_id, owned, quantity, condition, language, first_edition, updated_at)
+           VALUES(?,?,?,?,'FR',?,?)""",
+        (card_id, owned, body.quantity, condition if owned else None, int(body.first_edition and owned),
+         datetime.now(UTC).isoformat(timespec="seconds")),
+    )  # fmt: skip
+    return get_card(card_id, con)
 
 
 @router.get("/cards/{card_id}")

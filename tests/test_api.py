@@ -83,3 +83,54 @@ def test_pricing_rules():
     assert pricing.price_for(100, "EX", m, "FR", 0.8) == 68.0
     assert pricing.price_for(100, "EX", m, "EN", 0.8) == 85.0
     assert pricing.price_for(None, "NM", m) is None
+
+
+def test_create_custom_card(client):
+    body = {"set_id": "base1", "number": "103", "name_fr": "Carte Test", "rarity": "Rare Holo", "types": "Fire",
+            "hp": "90", "price_nm_cad": 40, "quantity": 2, "condition": "EX"}  # fmt: skip
+    r = client.post("/api/cards", json=body)
+    assert r.status_code == 201
+    c = r.json()
+    assert (
+        c["id"] == "base1-103" and c["is_custom"] == 1 and c["name_en"] == "Carte Test" and c["is_holo"] == 1
+    )
+    assert c["ref_source"] == "manual" and c["quantity"] == 2 and c["unit_value_cad"] == 34.0
+    assert client.get("/api/cards", params={"set": "base1"}).json()["total"] == 103
+    base = next(s for s in client.get("/api/sets").json() if s["id"] == "base1")
+    assert base["cards_in_set"] == 103 and base["owned"] == 1
+    assert client.get("/api/collection/summary").json()["total"]["value_cad"] == 68.0
+    client.put("/api/settings/eur_cad", json={"value": 2.0})  # FX change must not wipe a manual price
+    assert client.get("/api/cards/base1-103").json()["price_nm_cad"] == 40
+    assert client.get("/api/health").json()["cards"] == 1790
+
+
+def test_create_custom_card_defaults_and_validation(client):
+    r = client.post("/api/cards", json={"set_id": "base2", "number": "65a", "name_fr": "Sans Prix"})
+    assert r.status_code == 201
+    c = r.json()
+    assert (
+        c["price_nm_cad"] is None
+        and c["owned"] == 0
+        and c["number_sort"] == 65
+        and c["supertype"] == "Pokémon"
+    )
+    assert (
+        client.post("/api/cards", json={"set_id": "base2", "number": "65A", "name_fr": "x"}).status_code
+        == 409
+    )
+    assert (
+        client.post("/api/cards", json={"set_id": "base1", "number": "4", "name_fr": "x"}).status_code == 409
+    )
+    assert (
+        client.post("/api/cards", json={"set_id": "nope", "number": "1", "name_fr": "x"}).status_code == 404
+    )
+    assert (
+        client.post("/api/cards", json={"set_id": "base1", "number": "1/2", "name_fr": "x"}).status_code
+        == 422
+    )
+    assert (
+        client.post("/api/cards", json={"set_id": "base1", "number": "200", "name_fr": ""}).status_code == 422
+    )
+    bad = {"set_id": "base1", "number": "201", "name_fr": "x", "quantity": 1, "condition": "ZZ"}
+    assert client.post("/api/cards", json=bad).status_code == 422
+    assert client.get("/api/cards/base1-201").status_code == 404  # nothing half-created
