@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pokémon Collection – Local installation guide</title>
+<style>
+@page{size:A4;margin:18mm 17mm 18mm}
+*{box-sizing:border-box}
+body{font-family:"Segoe UI",Helvetica,Arial,sans-serif;font-size:10.5pt;line-height:1.45;color:#1c2033;margin:0}
+h1{font-size:22pt;margin:0 0 2pt;color:#1a2a6c}
+.sub{color:#5b6280;font-size:10.5pt;margin:0 0 14pt}
+h2{font-size:13.5pt;color:#1a2a6c;margin:18pt 0 6pt;padding-bottom:3pt;border-bottom:1.5pt solid #ffcb05;break-after:avoid}
+h3{font-size:11pt;margin:11pt 0 3pt;break-after:avoid}
+p{margin:4pt 0}
+ul,ol{margin:4pt 0 4pt 0;padding-left:18pt}
+li{margin:2pt 0}
+pre{background:#f1f3fa;border:0.75pt solid #d3d8ea;border-left:3pt solid #3b6bff;border-radius:4pt;padding:6pt 9pt;margin:5pt 0 7pt;font-family:Consolas,"Courier New",monospace;font-size:9.5pt;white-space:pre-wrap;word-break:break-all;break-inside:avoid}
+code{font-family:Consolas,"Courier New",monospace;font-size:9.5pt;background:#f1f3fa;padding:0.5pt 3pt;border-radius:3pt}
+.box{border:0.75pt solid #d3d8ea;border-radius:5pt;padding:7pt 10pt;margin:8pt 0;background:#fafbff;break-inside:avoid}
+.box.warn{border-color:#f0c36d;background:#fff8e6}
+.box b.t{display:block;margin-bottom:2pt}
+table{width:100%;border-collapse:collapse;margin:6pt 0;font-size:9.8pt}
+th,td{border:0.75pt solid #d3d8ea;padding:5pt 7pt;text-align:left;vertical-align:top}
+th{background:#eef1fb;color:#1a2a6c}
+tr{break-inside:avoid}
+.step{display:inline-block;background:#ffcb05;color:#111;font-weight:700;border-radius:50%;width:17pt;height:17pt;line-height:17pt;text-align:center;margin-right:5pt;font-size:10pt}
+.foot{margin-top:16pt;color:#5b6280;font-size:9pt;border-top:0.75pt solid #d3d8ea;padding-top:6pt}
+</style>
+</head>
+<body>
+
+<h1>Pokémon Collection</h1>
+<p class="sub">How to install and run the application on your own computer (Windows)</p>
+
+<p>Pokémon Collection is a small web application that runs entirely on your computer: a local server reads and writes one database file, and you use it from your web browser. Nothing is sent to the internet while you use it. Installation takes about ten minutes.</p>
+
+<div class="box">
+<b class="t">What you will end up with</b>
+<ul>
+<li>The application in <code>C:\Users\Karen\Documents\Dev_projects\Pokemon</code></li>
+<li>Your data in one file: <code>data\pokemon_collection.db</code> inside that folder</li>
+<li>The application in your browser at <code>http://127.0.0.1:8000</code> whenever the server is running</li>
+</ul>
+</div>
+
+<h2>1. Before you start</h2>
+<p>You need two free tools. All commands in this guide are typed in <b>PowerShell</b> (Start menu → type “PowerShell” → Enter). Type or paste one command at a time and press Enter.</p>
+
+<h3><span class="step">1</span>Git — downloads the application and its updates</h3>
+<p>Check whether it is already installed:</p>
+<pre>git --version</pre>
+<p>If you see a version number, skip ahead. Otherwise install it, then <b>close and reopen PowerShell</b>:</p>
+<pre>winget install --id Git.Git -e</pre>
+<p>(Alternative: download the installer from <code>https://git-scm.com/download/win</code> and accept the default options.)</p>
+
+<h3><span class="step">2</span>uv — installs Python and the application's components</h3>
+<p>Check whether it is already installed:</p>
+<pre>uv --version</pre>
+<p>If not, install it, then <b>close and reopen PowerShell</b>:</p>
+<pre>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"</pre>
+<p>You do not need to install Python yourself: uv downloads a suitable version (3.12 or newer) automatically if your computer does not have one.</p>
+
+<h2>2. Install the application</h2>
+
+<h3><span class="step">3</span>Download the application</h3>
+<pre>git clone https://github.com/kzandstra/cards.git "C:\Users\Karen\Documents\Dev_projects\Pokemon"</pre>
+<ul>
+<li>The <code>Pokemon</code> folder must not exist yet, or must be empty. If it already contains files, rename or empty it first.</li>
+<li>If the repository is private, a window asks you to sign in to GitHub the first time.</li>
+</ul>
+
+<h3><span class="step">4</span>Go into the folder and install the components</h3>
+<pre>cd "C:\Users\Karen\Documents\Dev_projects\Pokemon"</pre>
+<pre>uv sync</pre>
+<p>This creates a <code>.venv</code> folder with everything the application needs. It only has to be done once, and again after an update.</p>
+
+<h2>3. Start and use the application</h2>
+
+<h3><span class="step">5</span>Start the server</h3>
+<pre>cd "C:\Users\Karen\Documents\Dev_projects\Pokemon"</pre>
+<pre>uv run uvicorn app.main:app --reload</pre>
+<p>Wait for this line to appear:</p>
+<pre>Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)</pre>
+
+<h3><span class="step">6</span>Open the application</h3>
+<p>In Firefox (or any browser) open <code>http://127.0.0.1:8000</code>. The badge at the top right shows “Connected · 1789 cards”.</p>
+
+<div class="box warn">
+<b class="t">Keep the PowerShell window open</b>
+The application only works while that window is running the server. If you close it, the browser shows “Unable to connect”. To stop the server on purpose, click in the window and press <b>Ctrl + C</b>. To use the application again later, repeat step 5.
+</div>
+
+<h3>First steps in the application</h3>
+<ul>
+<li><b>Add a card you own:</b> pick a set, find the card, press “+ I have this card”, then set quantity and condition. It is saved immediately.</li>
+<li><b>Card or set missing?</b> Use “➕ Add a card” or “➕ New set” next to the search box. Cards and sets you added can be corrected or deleted with their ✎ button.</li>
+<li><b>Sell a card:</b> press “🏷 Sell” on a card you own, then follow it in the Sales tab.</li>
+<li>The “❓ How do I add a card?” panel at the top of the Collection tab explains each step.</li>
+</ul>
+
+<h2>4. Back up your data</h2>
+<p>Everything you enter lives in <code>data\pokemon_collection.db</code>. Make a copy regularly, and always before an update:</p>
+<pre>uv run python scripts/backup_db.py</pre>
+<p>The copy is written to the <code>backups</code> folder with the date and time in its name. You can also download a copy from the application: Export / Database tab → “SQLite database (.db)”.</p>
+
+<h2>5. Update to a newer version</h2>
+<p>Stop the server (Ctrl + C), then:</p>
+<pre>cd "C:\Users\Karen\Documents\Dev_projects\Pokemon"</pre>
+<pre>uv run python scripts/backup_db.py</pre>
+<pre>git pull</pre>
+<pre>uv sync</pre>
+<pre>uv run uvicorn app.main:app --reload</pre>
+<p>Then reload the page in the browser (Ctrl + F5).</p>
+
+<div class="box warn">
+<b class="t">If <code>git pull</code> refuses because of <code>data/pokemon_collection.db</code></b>
+Your database contains your own cards, so Git sees it as modified. This only blocks the update when the database file was also changed in the new version. Do not delete anything. Put your database aside, update, then put it back:
+<pre>copy data\pokemon_collection.db "$HOME\Documents\pokemon_collection_mine.db"</pre>
+<pre>git checkout -- data/pokemon_collection.db</pre>
+<pre>git pull</pre>
+<pre>copy "$HOME\Documents\pokemon_collection_mine.db" data\pokemon_collection.db</pre>
+The application adds any new tables to your database by itself the next time it starts.
+</div>
+
+<h2>6. If something goes wrong</h2>
+<table>
+<tr><th style="width:36%">What you see</th><th>What to do</th></tr>
+<tr><td>Browser: “Unable to connect” to 127.0.0.1:8000</td><td>The server is not running. Do step 5 and wait for the “Uvicorn running” line. If the command stopped with an error, read the last lines in PowerShell and look them up below.</td></tr>
+<tr><td><code>git</code> or <code>uv</code> “is not recognized”</td><td>The tool is not installed, or PowerShell was opened before it was installed. Close PowerShell, reopen it, and try again; otherwise redo step 1 or 2.</td></tr>
+<tr><td>“destination path already exists and is not an empty directory”</td><td>The <code>Pokemon</code> folder already has files in it. Empty or rename it, then repeat step 3.</td></tr>
+<tr><td>“address already in use” / port 8000 is busy</td><td>Another copy of the server is still running. Close the other PowerShell window, or start on another port by adding <code>--port 8001</code> to the command in step 5 and opening <code>http://127.0.0.1:8001</code>.</td></tr>
+<tr><td>“Could not import module app.main” or “No module named app”</td><td>PowerShell is not in the application folder. Run the <code>cd</code> command from step 5 first.</td></tr>
+<tr><td>Badge shows “Cannot reach the API” or “Save failed”</td><td>The server was stopped while the page was open. Restart it (step 5) and reload the page.</td></tr>
+<tr><td>The page looks unchanged after an update</td><td>Reload with Ctrl + F5 so the browser fetches the new version.</td></tr>
+<tr><td>A red error message (traceback) when starting</td><td>Copy the last 10–20 lines; they say exactly what failed. Your data is not affected by a failed start.</td></tr>
+</table>
+
+<h2>7. Command summary</h2>
+<table>
+<tr><th style="width:36%">To do this</th><th>Run this in the application folder</th></tr>
+<tr><td>Start the application</td><td><code>uv run uvicorn app.main:app --reload</code></td></tr>
+<tr><td>Stop the application</td><td>Ctrl + C in the PowerShell window</td></tr>
+<tr><td>Back up the database</td><td><code>uv run python scripts/backup_db.py</code></td></tr>
+<tr><td>Get the latest version</td><td><code>git pull</code> then <code>uv sync</code></td></tr>
+<tr><td>Refresh market prices (needs internet)</td><td><code>uv run python scripts/refresh_prices.py</code> — back up first</td></tr>
+<tr><td>Run the automated tests</td><td><code>uv run pytest -q</code></td></tr>
+</table>
+
+<p class="foot">Source code: https://github.com/kzandstra/cards · The application listens only on 127.0.0.1, so it is reachable from this computer only.</p>
+</body>
+</html>
