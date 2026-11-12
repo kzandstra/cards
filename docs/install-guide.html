@@ -37,14 +37,18 @@ tr{break-inside:avoid}
 <div class="box">
 <b class="t">What you will end up with</b>
 <ul>
-<li>The application in <code>C:\Users\Karen\Documents\Dev_projects\Pokemon</code></li>
-<li>Your data in one file: <code>data\pokemon_collection.db</code> inside that folder</li>
+<li>The application in a folder of your choice on your computer. This guide uses <code>Documents\Dev_projects\Pokemon</code> inside your own user folder as the example.</li>
+<li>Your own data in one file: <code>data\pokemon_collection.db</code> inside that folder. Each person who installs the application has their own separate collection.</li>
 <li>The application in your browser at <code>http://127.0.0.1:8000</code> whenever the server is running</li>
 </ul>
 </div>
 
 <h2>1. Before you start</h2>
 <p>You need two free tools. All commands in this guide are typed in <b>PowerShell</b> (Start menu → type “PowerShell” → Enter). Type or paste one command at a time and press Enter.</p>
+<div class="box">
+<b class="t">About folder names in this guide</b>
+<code>$HOME</code> is PowerShell's shortcut for your own user folder (for example <code>C:\Users\YourName</code>), so the commands work as written for any person on any computer — you do not need to replace it. If you prefer another location, replace <code>$HOME\Documents\Dev_projects</code> with your own path everywhere it appears, and keep the quotation marks.
+</div>
 
 <h3><span class="step">1</span>Git — downloads the application and its updates</h3>
 <p>Check whether it is already installed:</p>
@@ -62,32 +66,45 @@ tr{break-inside:avoid}
 
 <h2>2. Install the application</h2>
 
-<h3><span class="step">3</span>Download the application</h3>
-<pre>git clone https://github.com/kzandstra/cards.git "C:\Users\Karen\Documents\Dev_projects\Pokemon"</pre>
+<h3><span class="step">3</span>Create the folder that will hold the application</h3>
+<p>Create a parent folder (nothing happens if it already exists):</p>
+<pre>New-Item -ItemType Directory -Force "$HOME\Documents\Dev_projects"</pre>
+<p>Point PowerShell at it. <code>cd</code> means “change directory”: every following command runs inside that folder.</p>
+<pre>cd "$HOME\Documents\Dev_projects"</pre>
+<p>The start of the PowerShell line now shows the folder you are in, for example <code>PS C:\Users\YourName\Documents\Dev_projects&gt;</code>. You can also display it at any time with:</p>
+<pre>pwd</pre>
+
+<h3><span class="step">4</span>Download the application into it</h3>
+<pre>git clone https://github.com/kzandstra/cards.git Pokemon</pre>
 <ul>
-<li>The <code>Pokemon</code> folder must not exist yet, or must be empty. If it already contains files, rename or empty it first.</li>
-<li>If the repository is private, a window asks you to sign in to GitHub the first time.</li>
+<li>This creates a new <code>Pokemon</code> folder inside <code>Dev_projects</code>. It must not already exist; if it does, rename the old one first or choose another name in place of <code>Pokemon</code>.</li>
+<li>If the repository is private, the owner must first give your GitHub account access to it, and a window asks you to sign in to GitHub the first time.</li>
 </ul>
 
-<h3><span class="step">4</span>Go into the folder and install the components</h3>
-<pre>cd "C:\Users\Karen\Documents\Dev_projects\Pokemon"</pre>
+<h3><span class="step">5</span>Go into the application folder and install the components</h3>
+<pre>cd "$HOME\Documents\Dev_projects\Pokemon"</pre>
 <pre>uv sync</pre>
 <p>This creates a <code>.venv</code> folder with everything the application needs. It only has to be done once, and again after an update.</p>
 
 <h2>3. Start and use the application</h2>
 
-<h3><span class="step">5</span>Start the server</h3>
-<pre>cd "C:\Users\Karen\Documents\Dev_projects\Pokemon"</pre>
+<h3><span class="step">6</span>Start the server</h3>
+<p>Each time you open a new PowerShell window, first point it at the application folder, then start the server:</p>
+<pre>cd "$HOME\Documents\Dev_projects\Pokemon"</pre>
 <pre>uv run uvicorn app.main:app --reload</pre>
 <p>Wait for this line to appear:</p>
 <pre>Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)</pre>
 
-<h3><span class="step">6</span>Open the application</h3>
+<h3><span class="step">7</span>Open the application</h3>
 <p>In Firefox (or any browser) open <code>http://127.0.0.1:8000</code>. The badge at the top right shows “Connected · 1789 cards”.</p>
 
 <div class="box warn">
 <b class="t">Keep the PowerShell window open</b>
-The application only works while that window is running the server. If you close it, the browser shows “Unable to connect”. To stop the server on purpose, click in the window and press <b>Ctrl + C</b>. To use the application again later, repeat step 5.
+The application only works while that window is running the server. If you close it, the browser shows “Unable to connect”. To stop the server on purpose, click in the window and press <b>Ctrl + C</b>. To use the application again later, repeat step 6.
+</div>
+<div class="box">
+<b class="t">Shortcut: open PowerShell directly in the folder</b>
+Open the application folder in File Explorer, click in the address bar at the top, type <code>powershell</code> and press Enter. PowerShell opens already pointed at that folder, so you can skip the <code>cd</code> command.
 </div>
 
 <h3>First steps in the application</h3>
@@ -99,13 +116,13 @@ The application only works while that window is running the server. If you close
 </ul>
 
 <h2>4. Back up your data</h2>
-<p>Everything you enter lives in <code>data\pokemon_collection.db</code>. Make a copy regularly, and always before an update:</p>
+<p>Everything you enter lives in <code>data\pokemon_collection.db</code>. Make a copy regularly, and always before an update (run this in the application folder):</p>
 <pre>uv run python scripts/backup_db.py</pre>
 <p>The copy is written to the <code>backups</code> folder with the date and time in its name. You can also download a copy from the application: Export / Database tab → “SQLite database (.db)”.</p>
 
 <h2>5. Update to a newer version</h2>
 <p>Stop the server (Ctrl + C), then:</p>
-<pre>cd "C:\Users\Karen\Documents\Dev_projects\Pokemon"</pre>
+<pre>cd "$HOME\Documents\Dev_projects\Pokemon"</pre>
 <pre>uv run python scripts/backup_db.py</pre>
 <pre>git pull</pre>
 <pre>uv sync</pre>
@@ -125,12 +142,13 @@ The application adds any new tables to your database by itself the next time it 
 <h2>6. If something goes wrong</h2>
 <table>
 <tr><th style="width:36%">What you see</th><th>What to do</th></tr>
-<tr><td>Browser: “Unable to connect” to 127.0.0.1:8000</td><td>The server is not running. Do step 5 and wait for the “Uvicorn running” line. If the command stopped with an error, read the last lines in PowerShell and look them up below.</td></tr>
+<tr><td>Browser: “Unable to connect” to 127.0.0.1:8000</td><td>The server is not running. Do step 6 and wait for the “Uvicorn running” line. If the command stopped with an error, read the last lines in PowerShell and look them up below.</td></tr>
 <tr><td><code>git</code> or <code>uv</code> “is not recognized”</td><td>The tool is not installed, or PowerShell was opened before it was installed. Close PowerShell, reopen it, and try again; otherwise redo step 1 or 2.</td></tr>
-<tr><td>“destination path already exists and is not an empty directory”</td><td>The <code>Pokemon</code> folder already has files in it. Empty or rename it, then repeat step 3.</td></tr>
-<tr><td>“address already in use” / port 8000 is busy</td><td>Another copy of the server is still running. Close the other PowerShell window, or start on another port by adding <code>--port 8001</code> to the command in step 5 and opening <code>http://127.0.0.1:8001</code>.</td></tr>
-<tr><td>“Could not import module app.main” or “No module named app”</td><td>PowerShell is not in the application folder. Run the <code>cd</code> command from step 5 first.</td></tr>
-<tr><td>Badge shows “Cannot reach the API” or “Save failed”</td><td>The server was stopped while the page was open. Restart it (step 5) and reload the page.</td></tr>
+<tr><td>“destination path already exists and is not an empty directory”</td><td>A <code>Pokemon</code> folder already exists there. Rename it, or use another name in the command, then repeat step 4.</td></tr>
+<tr><td>“Cannot find path … because it does not exist” after <code>cd</code></td><td>The folder name in the command does not match where you installed the application. Find the folder in File Explorer, then use its real path in the <code>cd</code> command (in quotation marks), or use the address-bar shortcut from section 3.</td></tr>
+<tr><td>“address already in use” / port 8000 is busy</td><td>Another copy of the server is still running. Close the other PowerShell window, or start on another port by adding <code>--port 8001</code> to the command in step 6 and opening <code>http://127.0.0.1:8001</code>.</td></tr>
+<tr><td>“Could not import module app.main” or “No module named app”</td><td>PowerShell is not pointed at the application folder. Run the <code>cd</code> command from step 6 first, and check with <code>pwd</code>.</td></tr>
+<tr><td>Badge shows “Cannot reach the API” or “Save failed”</td><td>The server was stopped while the page was open. Restart it (step 6) and reload the page.</td></tr>
 <tr><td>The page looks unchanged after an update</td><td>Reload with Ctrl + F5 so the browser fetches the new version.</td></tr>
 <tr><td>A red error message (traceback) when starting</td><td>Copy the last 10–20 lines; they say exactly what failed. Your data is not affected by a failed start.</td></tr>
 </table>
